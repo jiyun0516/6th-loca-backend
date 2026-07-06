@@ -1,12 +1,18 @@
 package gdg.hongik.loca.service;
 
 import gdg.hongik.loca.dto.place.PlaceCreateRequest;
+import gdg.hongik.loca.dto.place.PlaceDetailResponse;
 import gdg.hongik.loca.dto.place.PlaceResponse;
 import gdg.hongik.loca.dto.place.PlaceUpdateRequest;
+import gdg.hongik.loca.dto.tag.TagResponse;
 import gdg.hongik.loca.entity.Place;
+import gdg.hongik.loca.entity.PlacePreference;
 import gdg.hongik.loca.exception.DuplicateKakaoPlaceIdException;
 import gdg.hongik.loca.exception.PlaceNotFoundException;
+import gdg.hongik.loca.repository.PlacePreferenceRepository;
 import gdg.hongik.loca.repository.PlaceRepository;
+import gdg.hongik.loca.repository.TagRepository;
+import gdg.hongik.loca.repository.VisitRecordRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +32,9 @@ import java.util.List;
 public class PlaceService {
 
     private final PlaceRepository placeRepository;
+    private final PlacePreferenceRepository placePreferenceRepository;
+    private final TagRepository tagRepository;
+    private final VisitRecordRepository visitRecordRepository;
 
     /**
      * 장소를 생성한다.
@@ -50,11 +59,15 @@ public class PlaceService {
         return PlaceResponse.from(placeRepository.save(place));
     }
 
-    /**
-     * 단건 조회. 없으면 {@link PlaceNotFoundException}.
-     */
-    public PlaceResponse getPlace(Integer placeId) {
-        return PlaceResponse.from(findById(placeId));
+    // 장소 단건 상세 조회
+    // - 태그 목록, 평균 평점, 방문 수 포함
+    // - 없으면 PlaceNotFoundException
+    public PlaceDetailResponse getPlace(Integer placeId) {
+        Place place = findById(placeId);
+        List<TagResponse> tags = getPlaceTags(placeId);
+        Double averageRating = visitRecordRepository.findAverageRatingByPlaceId(placeId);
+        long visitCount = visitRecordRepository.countActiveByPlaceId(placeId);
+        return PlaceDetailResponse.of(place, tags, averageRating, visitCount);
     }
 
     /**
@@ -88,6 +101,17 @@ public class PlaceService {
     public void deletePlace(Integer placeId) {
         Place place = findById(placeId);
         placeRepository.delete(place);
+    }
+
+    // 장소에 매핑된 태그 목록 조회
+    // - place_preferences -> tags 조인
+    private List<TagResponse> getPlaceTags(Integer placeId) {
+        List<Integer> tagIds = placePreferenceRepository.findByPlaceId(placeId).stream()
+                .map(PlacePreference::getTagId)
+                .toList();
+        return tagRepository.findAllById(tagIds).stream()
+                .map(TagResponse::from)
+                .toList();
     }
 
     private Place findById(Integer placeId) {
