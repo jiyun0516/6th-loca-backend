@@ -25,6 +25,20 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(e.getMessage()));
     }
 
+    // 태그 미존재 - 404
+    @ExceptionHandler(TagNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTagNotFound(TagNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
+    // 태그 이름 중복 - 409
+    @ExceptionHandler(DuplicateTagNameException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateTagName(DuplicateTagNameException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
     // 요청 본문 검증 실패 - 400
     // - 첫 번째 필드 에러 메시지 사용
     @ExceptionHandler(MethodArgumentNotValidException.class)
