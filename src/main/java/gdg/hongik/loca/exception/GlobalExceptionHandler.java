@@ -25,7 +25,7 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(e.getMessage()));
     }
 
-    // 태그 미존재 - 404
+    /* 태그 미존재 - 404
     @ExceptionHandler(TagNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleTagNotFound(TagNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -38,6 +38,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(e.getMessage()));
     }
+    */
 
     // 요청 본문 검증 실패 - 400
     // - 첫 번째 필드 에러 메시지 사용

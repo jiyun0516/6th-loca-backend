@@ -1,4 +1,9 @@
 package gdg.hongik.loca.enums;
 
-public class CompanionType {
+public enum CompanionType {
+    ALONE,
+    FRIEND,
+    LOVER,
+    FAMILY,
+    ETC
 }
