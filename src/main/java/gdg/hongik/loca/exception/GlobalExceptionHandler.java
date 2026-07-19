@@ -40,6 +40,13 @@ public class GlobalExceptionHandler {
     }
     */
 
+    // 방문 기록 미존재/삭제됨/소유자 불일치 - 404
+    @ExceptionHandler(VisitRecordNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleVisitRecordNotFound(VisitRecordNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
     // 요청 본문 검증 실패 - 400
     // - 첫 번째 필드 에러 메시지 사용
     @ExceptionHandler(MethodArgumentNotValidException.class)
