@@ -67,7 +67,7 @@ public class VisitService {
     // - 각 항목에 장소 이름 포함
     public List<VisitResponse> getMyVisits(Integer userId) {
         List<VisitRecord> records =
-                visitRecordRepository.findByUserIdAndDeletedAtIsNullOrderByVisitedAtDesc(userId);
+                visitRecordRepository.findActiveByUserId(userId);
         Map<Integer, String> placeNames = getPlaceNames(records);
         return records.stream()
                 .map(record -> VisitResponse.of(record, placeNames.get(record.getPlaceId())))
@@ -112,7 +112,7 @@ public class VisitService {
     // 활성 + 소유 방문 기록 조회 헬퍼
     // - 미존재/삭제됨/소유자 불일치 -> VisitRecordNotFoundException
     private VisitRecord findActiveOwned(Integer userId, Long visitId) {
-        return visitRecordRepository.findByVisitIdAndUserIdAndDeletedAtIsNull(visitId, userId)
+        return visitRecordRepository.findActiveByVisitIdAndUserId(visitId, userId)
                 .orElseThrow(() -> new VisitRecordNotFoundException(visitId));
     }
 

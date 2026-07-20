@@ -16,11 +16,17 @@ public interface VisitRecordRepository extends JpaRepository<VisitRecord, Long> 
 
     // 사용자별 활성 기록 목록
     // - deletedAt null, visitedAt 내림차순
-    List<VisitRecord> findByUserIdAndDeletedAtIsNullOrderByVisitedAtDesc(Integer userId);
+    @Query("select v from VisitRecord v " +
+            "where v.userId = :userId and v.deletedAt is null " +
+            "order by v.visitedAt desc")
+    List<VisitRecord> findActiveByUserId(@Param("userId") Integer userId);
 
     // 활성 + 소유 단건 조회
     // - 미존재/삭제됨/소유자 불일치 시 empty
-    Optional<VisitRecord> findByVisitIdAndUserIdAndDeletedAtIsNull(Long visitId, Integer userId);
+    @Query("select v from VisitRecord v " +
+            "where v.visitId = :visitId and v.userId = :userId and v.deletedAt is null")
+    Optional<VisitRecord> findActiveByVisitIdAndUserId(@Param("visitId") Long visitId,
+                                                       @Param("userId") Integer userId);
 
     // 장소 평균 평점 조회
     // - 삭제되지 않고 평점이 있는 기록만 집계
