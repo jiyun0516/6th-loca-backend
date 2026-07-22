@@ -47,6 +47,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(e.getMessage()));
     }
 
+    // 추천 요청 파라미터 오류(tagIds 미선택 등) - 400
+    @ExceptionHandler(InvalidRecommendationRequestException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRecommendationRequest(InvalidRecommendationRequestException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
     // 요청 본문 검증 실패 - 400
     // - 첫 번째 필드 에러 메시지 사용
     @ExceptionHandler(MethodArgumentNotValidException.class)
