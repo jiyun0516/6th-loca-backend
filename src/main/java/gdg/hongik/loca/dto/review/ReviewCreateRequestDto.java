@@ -15,6 +15,9 @@ import gdg.hongik.loca.enums.MoodType;
 @Builder
 public class ReviewCreateRequestDto {
 
+    // 방문한 장소 ID (엔티티 place_id, not-null)
+    private Integer placeId;
+
     // 오늘의 제목
     private String title;
 
