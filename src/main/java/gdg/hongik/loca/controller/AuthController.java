@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import gdg.hongik.loca.dto.auth.LoginRequest;
+import gdg.hongik.loca.dto.auth.LoginResponse;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -26,5 +29,12 @@ public class AuthController {
         Integer userId = authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new SignupResponse(userId));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+        return ResponseEntity.ok(authService.login(request));
     }
 }
