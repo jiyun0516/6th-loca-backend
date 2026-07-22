@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "places")
+@Table(name = "public_places")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
