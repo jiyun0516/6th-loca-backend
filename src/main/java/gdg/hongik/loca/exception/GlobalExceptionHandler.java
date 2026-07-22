@@ -47,20 +47,6 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(e.getMessage()));
     }
 
-    // 이메일 중복 - 409
-    @ExceptionHandler(DuplicateEmailException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateEmail(DuplicateEmailException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ErrorResponse(e.getMessage()));
-    }
-
-    // 로그인 실패(사용자 없음/비번 불일치) - 401
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponse(e.getMessage()));
-    }
-
     // 요청 본문 검증 실패 - 400
     // - 첫 번째 필드 에러 메시지 사용
     @ExceptionHandler(MethodArgumentNotValidException.class)
