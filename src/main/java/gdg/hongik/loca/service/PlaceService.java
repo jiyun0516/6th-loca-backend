@@ -94,13 +94,13 @@ public class PlaceService {
         return PlaceResponse.from(place);
     }
 
-    /**
-     * 장소를 삭제한다(하드 삭제).
-     */
+    //
+    // 장소를 삭제한다(소프트 삭제).
+    //
     @Transactional
     public void deletePlace(Integer placeId) {
         Place place = findById(placeId);
-        placeRepository.delete(place);
+        place.setDeletedAt(java.time.OffsetDateTime.now());
     }
 
     // 장소에 매핑된 태그 목록 조회
