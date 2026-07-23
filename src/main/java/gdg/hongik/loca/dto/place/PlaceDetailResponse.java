@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 // 장소 상세 응답 DTO
-// - 기본 정보 + 태그 목록 + 평균 평점 + 방문 수
+// - 기본 정보 + 태그 목록 + 방문 수
 public record PlaceDetailResponse(
         Integer placeId,
         String name,
@@ -17,7 +17,6 @@ public record PlaceDetailResponse(
         BigDecimal lat,
         BigDecimal lng,
         List<TagResponse> tags,
-        Double averageRating,
         long visitCount,
         OffsetDateTime createdAt
 ) {
@@ -25,12 +24,10 @@ public record PlaceDetailResponse(
     // 조립 팩토리
     // - place: 장소 엔티티
     // - tags: 매핑된 태그 목록
-    // - averageRating: 평균 평점(기록 없으면 null)
     // - visitCount: 유효 방문 수
     public static PlaceDetailResponse of(
             Place place,
             List<TagResponse> tags,
-            Double averageRating,
             long visitCount
     ) {
         return new PlaceDetailResponse(
@@ -41,7 +38,6 @@ public record PlaceDetailResponse(
                 place.getLat(),
                 place.getLng(),
                 tags,
-                averageRating,
                 visitCount,
                 place.getCreatedAt()
         );

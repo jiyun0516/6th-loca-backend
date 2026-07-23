@@ -1,7 +1,6 @@
 package gdg.hongik.loca.entity;
 
 import gdg.hongik.loca.enums.CompanionType;
-import gdg.hongik.loca.enums.MoodType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -36,38 +35,10 @@ public class VisitRecord {
     @Column(name = "title", columnDefinition = "text")
     private String title;
 
-    @Column(name = "rating")
-    private Short rating;
-
     // 동행 유형
     @Enumerated(EnumType.STRING)
     @Column(name = "companion")
     private CompanionType companion;
-
-    // 방문 당시 감정
-    @Enumerated(EnumType.STRING)
-    @Column(name = "mood")
-    private MoodType mood;
-
-    // 기억에 남는 순간
-    @Column(name = "memorable_moment", columnDefinition = "text")
-    private String memorableMoment;
-
-    // 좋았던 점
-    @Column(name = "good_point", columnDefinition = "text")
-    private String goodPoint;
-
-    // 가격(원)
-    @Column(name = "price")
-    private Integer price;
-
-    // 가격 모름 여부
-    @Column(name = "unknown_price")
-    private Boolean unknownPrice;
-
-    // 미래의 나에게 남기는 메시지
-    @Column(name = "message_to_future", columnDefinition = "text")
-    private String messageToFuture;
 
     // 키워드 목록 (visit_keywords)
     @ElementCollection

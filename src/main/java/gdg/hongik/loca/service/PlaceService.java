@@ -60,14 +60,13 @@ public class PlaceService {
     }
 
     // 장소 단건 상세 조회
-    // - 태그 목록, 평균 평점, 방문 수 포함
+    // - 태그 목록, 방문 수 포함
     // - 없으면 PlaceNotFoundException
     public PlaceDetailResponse getPlace(Integer placeId) {
         Place place = findById(placeId);
         List<TagResponse> tags = getPlaceTags(placeId);
-        Double averageRating = visitRecordRepository.findAverageRatingByPlaceId(placeId);
         long visitCount = visitRecordRepository.countActiveByPlaceId(placeId);
-        return PlaceDetailResponse.of(place, tags, averageRating, visitCount);
+        return PlaceDetailResponse.of(place, tags, visitCount);
     }
 
     /**
