@@ -38,14 +38,7 @@ public class ReviewService {
                 .userId(TEMP_USER_ID)
                 .placeId(request.getPlaceId())
                 .title(request.getTitle())
-                .rating(toShort(request.getRating()))
                 .companion(request.getCompanion())
-                .mood(request.getMood())
-                .memorableMoment(request.getMemorableMoment())
-                .goodPoint(request.getGoodPoint())
-                .price(request.getPrice())
-                .unknownPrice(request.getUnknownPrice())
-                .messageToFuture(request.getMessageToFuture())
                 .keywords(toSet(request.getKeywords()))
                 .atmosphereTags(toSet(request.getAtmosphereTags()))
                 .imageUrls(toList(request.getImageUrls()))
@@ -75,14 +68,7 @@ public class ReviewService {
     public ReviewResponseDto update(Long visitId, @Valid ReviewCreateRequestDto request) {
         VisitRecord record = findActiveOwned(visitId);
         record.setTitle(request.getTitle());
-        record.setRating(toShort(request.getRating()));
         record.setCompanion(request.getCompanion());
-        record.setMood(request.getMood());
-        record.setMemorableMoment(request.getMemorableMoment());
-        record.setGoodPoint(request.getGoodPoint());
-        record.setPrice(request.getPrice());
-        record.setUnknownPrice(request.getUnknownPrice());
-        record.setMessageToFuture(request.getMessageToFuture());
         record.setKeywords(toSet(request.getKeywords()));
         record.setAtmosphereTags(toSet(request.getAtmosphereTags()));
         record.setImageUrls(toList(request.getImageUrls()));
@@ -101,11 +87,6 @@ public class ReviewService {
     private VisitRecord findActiveOwned(Long visitId) {
         return visitRecordRepository.findActiveByVisitIdAndUserId(visitId, TEMP_USER_ID)
                 .orElseThrow(() -> new VisitRecordNotFoundException(visitId));
-    }
-
-    // Integer 만족도 -> 엔티티 Short 변환 (null 허용)
-    private Short toShort(Integer value) {
-        return value == null ? null : value.shortValue();
     }
 
     // List -> Set 변환 (null 시 빈 집합)
