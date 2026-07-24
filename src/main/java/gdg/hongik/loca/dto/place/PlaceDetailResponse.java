@@ -1,7 +1,7 @@
 package gdg.hongik.loca.dto.place;
 
 import gdg.hongik.loca.dto.tag.TagResponse;
-import gdg.hongik.loca.entity.Place;
+import gdg.hongik.loca.entity.PublicPlace;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -26,7 +26,7 @@ public record PlaceDetailResponse(
     // - tags: 매핑된 태그 목록
     // - visitCount: 유효 방문 수
     public static PlaceDetailResponse of(
-            Place place,
+            PublicPlace place,
             List<TagResponse> tags,
             long visitCount
     ) {

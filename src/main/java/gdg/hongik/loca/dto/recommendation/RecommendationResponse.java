@@ -1,6 +1,6 @@
 package gdg.hongik.loca.dto.recommendation;
 
-import gdg.hongik.loca.entity.Place;
+import gdg.hongik.loca.entity.PublicPlace;
 
 import java.math.BigDecimal;
 
@@ -15,8 +15,8 @@ public record RecommendationResponse(
         BigDecimal matchScore
 ) {
 
-    // Place + 매칭 점수 -> 응답 DTO
-    public static RecommendationResponse of(Place place, BigDecimal matchScore) {
+    // PublicPlace + 매칭 점수 -> 응답 DTO
+    public static RecommendationResponse of(PublicPlace place, BigDecimal matchScore) {
         return new RecommendationResponse(
                 place.getPlaceId(),
                 place.getName(),

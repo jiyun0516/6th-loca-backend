@@ -2,7 +2,7 @@ package gdg.hongik.loca.service;
 
 import gdg.hongik.loca.dto.recommendation.PlaceScoreProjection;
 import gdg.hongik.loca.dto.recommendation.RecommendationResponse;
-import gdg.hongik.loca.entity.Place;
+import gdg.hongik.loca.entity.PublicPlace;
 import gdg.hongik.loca.exception.InvalidRecommendationRequestException;
 import gdg.hongik.loca.repository.PlacePreferenceRepository;
 import gdg.hongik.loca.repository.PlaceRepository;
@@ -51,8 +51,8 @@ public class RecommendationService {
         List<Integer> placeIds = scores.stream()
                 .map(PlaceScoreProjection::getPlaceId)
                 .toList();
-        Map<Integer, Place> placeMap = placeRepository.findAllById(placeIds).stream()
-                .collect(Collectors.toMap(Place::getPlaceId, Function.identity()));
+        Map<Integer, PublicPlace> placeMap = placeRepository.findAllById(placeIds).stream()
+                .collect(Collectors.toMap(PublicPlace::getPlaceId, Function.identity()));
 
         // 프로젝션 순서(점수 내림차순) 유지하며 매핑
         return scores.stream()

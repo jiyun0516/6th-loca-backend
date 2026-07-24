@@ -5,7 +5,7 @@ import gdg.hongik.loca.dto.place.PlaceDetailResponse;
 import gdg.hongik.loca.dto.place.PlaceResponse;
 import gdg.hongik.loca.dto.place.PlaceUpdateRequest;
 import gdg.hongik.loca.dto.tag.TagResponse;
-import gdg.hongik.loca.entity.Place;
+import gdg.hongik.loca.entity.PublicPlace;
 import gdg.hongik.loca.entity.PlacePreference;
 import gdg.hongik.loca.exception.DuplicateKakaoPlaceIdException;
 import gdg.hongik.loca.exception.PlaceNotFoundException;
@@ -48,7 +48,7 @@ public class PlaceService {
                 });
 
 
-        Place place = Place.builder()
+        PublicPlace place = PublicPlace.builder()
                 .name(request.name())
                 .kakaoPlaceId(request.kakaoPlaceId())
                 .address(request.address())
@@ -63,7 +63,7 @@ public class PlaceService {
     // - 태그 목록, 방문 수 포함
     // - 없으면 PlaceNotFoundException
     public PlaceDetailResponse getPlace(Integer placeId) {
-        Place place = findById(placeId);
+        PublicPlace place = findById(placeId);
         List<TagResponse> tags = getPlaceTags(placeId);
         long visitCount = visitRecordRepository.countActiveByPlaceId(placeId);
         return PlaceDetailResponse.of(place, tags, visitCount);
@@ -83,7 +83,7 @@ public class PlaceService {
      */
     @Transactional
     public PlaceResponse updatePlace(Integer placeId, @Valid PlaceUpdateRequest request) {
-        Place place = findById(placeId);
+        PublicPlace place = findById(placeId);
 
         place.setName(request.name());
         place.setAddress(request.address());
@@ -98,7 +98,7 @@ public class PlaceService {
     //
     @Transactional
     public void deletePlace(Integer placeId) {
-        Place place = findById(placeId);
+        PublicPlace place = findById(placeId);
         place.setDeletedAt(java.time.OffsetDateTime.now());
     }
 
@@ -113,7 +113,7 @@ public class PlaceService {
                 .toList();
     }
 
-    private Place findById(Integer placeId) {
+    private PublicPlace findById(Integer placeId) {
         return placeRepository.findById(placeId)
                 .orElseThrow(() -> new PlaceNotFoundException(placeId));
     }
