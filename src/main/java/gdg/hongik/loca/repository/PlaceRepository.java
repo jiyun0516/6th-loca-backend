@@ -1,11 +1,11 @@
 package gdg.hongik.loca.repository;
 
-import gdg.hongik.loca.entity.Place;
+import gdg.hongik.loca.entity.PublicPlace;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface PlaceRepository extends JpaRepository<Place, Integer> {
+public interface PlaceRepository extends JpaRepository<PublicPlace, Integer> {
 
-    Optional<Place> findByKakaoPlaceId(String kakaoPlaceId);
+    Optional<PublicPlace> findByKakaoPlaceId(String kakaoPlaceId);
 }

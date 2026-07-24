@@ -1,6 +1,6 @@
 package gdg.hongik.loca.dto.place;
 
-import gdg.hongik.loca.entity.Place;
+import gdg.hongik.loca.entity.PublicPlace;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -18,7 +18,7 @@ public record PlaceResponse(
         OffsetDateTime createdAt
 ) {
 
-    public static PlaceResponse from(Place place) {
+    public static PlaceResponse from(PublicPlace place) {
         return new PlaceResponse(
                 place.getPlaceId(),
                 place.getName(),
