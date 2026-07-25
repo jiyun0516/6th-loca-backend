@@ -35,6 +35,10 @@ public class VisitRecord {
     @Column(name = "title", columnDefinition = "text")
     private String title;
 
+    // 방문 후기 본문
+    @Column(name = "content", columnDefinition = "text")
+    private String content;
+
     // 동행 유형
     @Enumerated(EnumType.STRING)
     @Column(name = "companion")
