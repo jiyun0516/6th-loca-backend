@@ -2,7 +2,7 @@ package gdg.hongik.loca.controller;
 
 import gdg.hongik.loca.dto.place.PlaceDetailResponse;
 import gdg.hongik.loca.dto.place.PlaceResponse;
-import gdg.hongik.loca.service.PlaceService;
+import gdg.hongik.loca.service.PublicPlaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,19 +13,19 @@ import java.util.List;
 
 // 장소 조회 API
 @RestController
-@RequestMapping("/api/places")
+@RequestMapping("/api/places/public")
 @RequiredArgsConstructor
-public class PlaceController {
+public class PublicPlaceController {
 
-    private final PlaceService placeService;
+    private final PublicPlaceService placeService;
 
-    // GET /api/places - 장소 목록 조회
+    // 장소 목록 조회
     @GetMapping
     public List<PlaceResponse> getPlaces() {
         return placeService.getPlaces();
     }
 
-    // GET /api/places/{placeId} - 장소 상세 조회(태그, 평균 평점 포함)
+    // 장소 상세 조회(태그, 평균 평점 포함)
     @GetMapping("/{placeId}")
     public PlaceDetailResponse getPlace(@PathVariable Integer placeId) {
         return placeService.getPlace(placeId);

@@ -5,7 +5,7 @@ import gdg.hongik.loca.dto.recommendation.RecommendationResponse;
 import gdg.hongik.loca.entity.PublicPlace;
 import gdg.hongik.loca.exception.InvalidRecommendationRequestException;
 import gdg.hongik.loca.repository.PlacePreferenceRepository;
-import gdg.hongik.loca.repository.PlaceRepository;
+import gdg.hongik.loca.repository.PublicPlaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 public class RecommendationService {
 
     private final PlacePreferenceRepository placePreferenceRepository;
-    private final PlaceRepository placeRepository;
+    private final PublicPlaceRepository placeRepository;
 
     // 임시 userId, JWT 도입 시 토큰에서 추출로 교체
     private static final Integer TEMP_USER_ID = 1;
