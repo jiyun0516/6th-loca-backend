@@ -25,7 +25,7 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(e.getMessage()));
     }
 
-    /* 태그 미존재 - 404
+    // 태그 미존재 - 404
     @ExceptionHandler(TagNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleTagNotFound(TagNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -38,7 +38,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(e.getMessage()));
     }
-    */
 
     // 방문 기록 미존재/삭제됨/소유자 불일치 - 404
     @ExceptionHandler(VisitRecordNotFoundException.class)

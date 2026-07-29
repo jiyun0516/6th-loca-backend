@@ -3,7 +3,7 @@ package gdg.hongik.loca.controller;
 import gdg.hongik.loca.dto.place.PlaceCreateRequest;
 import gdg.hongik.loca.dto.place.PlaceResponse;
 import gdg.hongik.loca.dto.place.PlaceUpdateRequest;
-import gdg.hongik.loca.service.PlaceService;
+import gdg.hongik.loca.service.PublicPlaceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin/places")
 @RequiredArgsConstructor
-public class AdminPlaceController {
+public class AdminPublicPlaceController {
 
-    private final PlaceService placeService;
+    private final PublicPlaceService placeService;
 
     // POST /api/admin/places - 장소 등록
     // - kakaoPlaceId 중복이면 409

@@ -10,7 +10,7 @@ import gdg.hongik.loca.entity.PlacePreference;
 import gdg.hongik.loca.exception.DuplicateKakaoPlaceIdException;
 import gdg.hongik.loca.exception.PlaceNotFoundException;
 import gdg.hongik.loca.repository.PlacePreferenceRepository;
-import gdg.hongik.loca.repository.PlaceRepository;
+import gdg.hongik.loca.repository.PublicPlaceRepository;
 import gdg.hongik.loca.repository.TagRepository;
 import gdg.hongik.loca.repository.VisitRecordRepository;
 import jakarta.validation.Valid;
@@ -29,9 +29,9 @@ import java.util.List;
 @Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class PlaceService {
+public class PublicPlaceService {
 
-    private final PlaceRepository placeRepository;
+    private final PublicPlaceRepository placeRepository;
     private final PlacePreferenceRepository placePreferenceRepository;
     private final TagRepository tagRepository;
     private final VisitRecordRepository visitRecordRepository;
