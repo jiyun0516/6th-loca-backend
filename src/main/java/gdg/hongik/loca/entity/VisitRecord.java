@@ -3,6 +3,7 @@ package gdg.hongik.loca.entity;
 import gdg.hongik.loca.enums.CompanionType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
@@ -45,24 +46,20 @@ public class VisitRecord {
     private CompanionType companion;
 
     // 키워드 목록 (visit_keywords)
+    // - 자유 입력(해시태그 형식), 표시용. 추천 점수는 visit_tags 사용
     @ElementCollection
     @CollectionTable(name = "visit_keywords", joinColumns = @JoinColumn(name = "visit_id"))
     @Column(name = "keyword")
+    @BatchSize(size = 50)
     @Builder.Default
     private Set<String> keywords = new LinkedHashSet<>();
-
-    // 분위기 태그 목록 (visit_atmosphere_tags)
-    @ElementCollection
-    @CollectionTable(name = "visit_atmosphere_tags", joinColumns = @JoinColumn(name = "visit_id"))
-    @Column(name = "atmosphere_tag")
-    @Builder.Default
-    private Set<String> atmosphereTags = new LinkedHashSet<>();
 
     // 이미지 URL 목록 (visit_images, 정렬 순서 보존)
     @ElementCollection
     @CollectionTable(name = "visit_images", joinColumns = @JoinColumn(name = "visit_id"))
     @OrderColumn(name = "sort_order")
     @Column(name = "image_url")
+    @BatchSize(size = 50)
     @Builder.Default
     private List<String> imageUrls = new ArrayList<>();
 
@@ -73,6 +70,7 @@ public class VisitRecord {
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
-    @Column(name = "deleted_at")
-    private OffsetDateTime deletedAt;
+    // 삭제 정책 = 하드 삭제
+    // - 다른 애그리거트가 참조하지 않음(자기 자식 visit_keywords/visit_images/visit_tags만)
+    // - deletedAt 컬럼 없음
 }
