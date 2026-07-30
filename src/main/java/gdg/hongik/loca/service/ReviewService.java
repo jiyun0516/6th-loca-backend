@@ -3,8 +3,10 @@ package gdg.hongik.loca.service;
 import gdg.hongik.loca.dto.review.ReviewCreateRequestDto;
 import gdg.hongik.loca.dto.review.ReviewResponseDto;
 import gdg.hongik.loca.entity.VisitRecord;
+import gdg.hongik.loca.entity.VisitTag;
 import gdg.hongik.loca.exception.VisitRecordNotFoundException;
 import gdg.hongik.loca.repository.VisitRecordRepository;
+import gdg.hongik.loca.repository.VisitTagRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,12 +27,15 @@ import java.util.Set;
 public class ReviewService {
 
     private final VisitRecordRepository visitRecordRepository;
+    private final VisitTagRepository visitTagRepository;
+    private final UserPreferenceUpdater userPreferenceUpdater;
+    private final PlacePreferenceUpdater placePreferenceUpdater;
 
     // 임시 userId, JWT 도입 시 토큰에서 추출로 교체
     private static final Integer TEMP_USER_ID = 1;
 
     // 방문 후기 생성
-    // - VisitRecord 저장 후 응답 DTO 반환(201)
+    // - VisitRecord 저장 -> visit_tags 저장 -> 선호도 갱신 순서
     // - visitedAt 미수신 시 기록 시각으로 대체
     @Transactional
     public ReviewResponseDto create(@Valid ReviewCreateRequestDto request) {
@@ -38,55 +43,104 @@ public class ReviewService {
                 .userId(TEMP_USER_ID)
                 .placeId(request.getPlaceId())
                 .title(request.getTitle())
+                .content(request.getContent())
                 .companion(request.getCompanion())
                 .keywords(toSet(request.getKeywords()))
-                .atmosphereTags(toSet(request.getAtmosphereTags()))
                 .imageUrls(toList(request.getImageUrls()))
-                .visitedAt(OffsetDateTime.now()) // 방문 일시 미수신 시 기록 시각으로 대체
+                .visitedAt(request.getVisitedAt() == null ? OffsetDateTime.now() : request.getVisitedAt())
                 .build();
-        return ReviewResponseDto.from(visitRecordRepository.save(record));
+        VisitRecord saved = visitRecordRepository.save(record);
+
+        List<Integer> tagIds = saveTags(saved.getVisitId(), request.getTagIds());
+        refreshPreferences(saved.getPlaceId());
+
+        return ReviewResponseDto.from(saved, tagIds);
     }
 
     // 내 방문 후기 목록
-    // - deletedAt null, visitedAt 내림차순
+    // - visitedAt 내림차순
     public List<ReviewResponseDto> list() {
-        return visitRecordRepository.findActiveByUserId(TEMP_USER_ID).stream()
-                .map(ReviewResponseDto::from)
+        return visitRecordRepository.findByUserIdOrderByVisitedAtDesc(TEMP_USER_ID).stream()
+                .map(r -> ReviewResponseDto.from(r, findTagIds(r.getVisitId())))
                 .toList();
     }
 
     // 내 방문 후기 상세
-    // - 키워드/분위기태그/이미지 포함
+    // - 키워드/태그/이미지 포함
     public ReviewResponseDto detail(Long visitId) {
-        return ReviewResponseDto.from(findActiveOwned(visitId));
+        VisitRecord record = findOwned(visitId);
+        return ReviewResponseDto.from(record, findTagIds(visitId));
     }
 
     // 내 방문 후기 수정
     // - dirty checking
-    // - 키워드/분위기태그/이미지 컬렉션은 전체 교체
+    // - 키워드/이미지 컬렉션과 태그는 전체 교체
     @Transactional
     public ReviewResponseDto update(Long visitId, @Valid ReviewCreateRequestDto request) {
-        VisitRecord record = findActiveOwned(visitId);
+        VisitRecord record = findOwned(visitId);
         record.setTitle(request.getTitle());
+        record.setContent(request.getContent());
         record.setCompanion(request.getCompanion());
         record.setKeywords(toSet(request.getKeywords()));
-        record.setAtmosphereTags(toSet(request.getAtmosphereTags()));
         record.setImageUrls(toList(request.getImageUrls()));
-        return ReviewResponseDto.from(record);
+        if (request.getVisitedAt() != null) {
+            record.setVisitedAt(request.getVisitedAt());
+        }
+
+        visitTagRepository.deleteByVisitId(visitId);
+        List<Integer> tagIds = saveTags(visitId, request.getTagIds());
+        refreshPreferences(record.getPlaceId());
+
+        return ReviewResponseDto.from(record, tagIds);
     }
 
-    // 내 방문 후기 삭제(soft-delete)
-    // - deletedAt = now
+    // 내 방문 후기 삭제(하드 삭제)
     @Transactional
     public void delete(Long visitId) {
-        findActiveOwned(visitId).setDeletedAt(OffsetDateTime.now());
+        VisitRecord record = findOwned(visitId);
+        Integer placeId = record.getPlaceId();
+
+        visitTagRepository.deleteByVisitId(visitId);
+        visitRecordRepository.delete(record);
+        refreshPreferences(placeId);
     }
 
-    // 활성 + 소유 단건 조회 헬퍼
-    // - 미존재/삭제됨/소유자 불일치 -> VisitRecordNotFoundException
-    private VisitRecord findActiveOwned(Long visitId) {
-        return visitRecordRepository.findActiveByVisitIdAndUserId(visitId, TEMP_USER_ID)
+    // 소유 단건 조회 헬퍼
+    // - 미존재/소유자 불일치 -> VisitRecordNotFoundException
+    private VisitRecord findOwned(Long visitId) {
+        return visitRecordRepository.findByVisitIdAndUserId(visitId, TEMP_USER_ID)
                 .orElseThrow(() -> new VisitRecordNotFoundException(visitId));
+    }
+
+    // 선택 태그 저장
+    // - 미존재 ID는 FK 위반, 중복 ID는 PK 위반 -> 400 (별도 검증 로직 없음)
+    private List<Integer> saveTags(Long visitId, List<Integer> tagIds) {
+        if (tagIds == null || tagIds.isEmpty()) {
+            return List.of();
+        }
+        List<VisitTag> rows = tagIds.stream()
+                .map(tagId -> VisitTag.builder()
+                        .visitId(visitId)
+                        .tagId(tagId)
+                        .build())
+                .toList();
+        visitTagRepository.saveAll(rows);
+        return tagIds;
+    }
+
+    // 방문 기록의 태그 ID 목록 조회
+    private List<Integer> findTagIds(Long visitId) {
+        return visitTagRepository.findByVisitId(visitId).stream()
+                .map(VisitTag::getTagId)
+                .toList();
+    }
+
+    // 선호도 갱신 (생성/수정/삭제 공통 지점)
+    // - user_preferences: 즉시 재집계 (flush는 updater 내부에서 수행)
+    // - place_preferences: dirty 표시만. 실제 재집계는 추천 조회 시
+    private void refreshPreferences(Integer placeId) {
+        userPreferenceUpdater.refresh(TEMP_USER_ID);
+        placePreferenceUpdater.markDirty(placeId);
     }
 
     // List -> Set 변환 (null 시 빈 집합)

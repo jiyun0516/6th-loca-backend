@@ -1,5 +1,6 @@
 package gdg.hongik.loca.repository;
 
+import gdg.hongik.loca.dto.preference.TagScoreProjection;
 import gdg.hongik.loca.entity.VisitTag;
 import gdg.hongik.loca.entity.VisitTagId;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,4 +21,21 @@ public interface VisitTagRepository extends JpaRepository<VisitTag, VisitTagId> 
     @Modifying
     @Query("delete from VisitTag vt where vt.visitId = :visitId")
     void deleteByVisitId(@Param("visitId") Long visitId);
+
+    // 사용자 취향 점수 재집계용 집계
+    // - count(*): 태그 반복 선택이 취향 강도
+    // - VisitTag-VisitRecord 연관 매핑이 없어 조건 조인
+    @Query("select vt.tagId as tagId, count(vt) as score " +
+            "from VisitTag vt, VisitRecord v " +
+            "where v.visitId = vt.visitId and v.userId = :userId " +
+            "group by vt.tagId")
+    List<TagScoreProjection> aggregateByUserId(@Param("userId") Integer userId);
+
+    // 장소 태그 점수 재집계용 집계
+    // - count(distinct user_id): 한 사람은 한 표(반복 방문 흡수)
+    @Query("select vt.tagId as tagId, count(distinct v.userId) as score " +
+            "from VisitTag vt, VisitRecord v " +
+            "where v.visitId = vt.visitId and v.placeId = :placeId " +
+            "group by vt.tagId")
+    List<TagScoreProjection> aggregateByPlaceId(@Param("placeId") Integer placeId);
 }

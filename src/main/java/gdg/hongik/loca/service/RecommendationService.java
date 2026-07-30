@@ -27,6 +27,7 @@ public class RecommendationService {
 
     private final PlacePreferenceRepository placePreferenceRepository;
     private final PublicPlaceRepository placeRepository;
+    private final PlacePreferenceUpdater placePreferenceUpdater;
 
     // 임시 userId, JWT 도입 시 토큰에서 추출로 교체
     private static final Integer TEMP_USER_ID = 1;
@@ -43,6 +44,9 @@ public class RecommendationService {
         if (tagIds == null || tagIds.isEmpty()) {
             throw new InvalidRecommendationRequestException();
         }
+
+        // 조회 전 dirty 장소 점수 재집계 (place_preferences 갱신 시점)
+        placePreferenceUpdater.refreshDirty();
 
         List<PlaceScoreProjection> scores = placePreferenceRepository.findExploreScores(
                 tagIds, TEMP_USER_ID, PageRequest.of(0, EXPLORE_LIMIT));
