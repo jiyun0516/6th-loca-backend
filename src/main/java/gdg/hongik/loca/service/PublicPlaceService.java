@@ -65,7 +65,7 @@ public class PublicPlaceService {
     public PlaceDetailResponse getPlace(Integer placeId) {
         PublicPlace place = findById(placeId);
         List<TagResponse> tags = getPlaceTags(placeId);
-        long visitCount = visitRecordRepository.countActiveByPlaceId(placeId);
+        long visitCount = visitRecordRepository.countByPlaceId(placeId);
         return PlaceDetailResponse.of(place, tags, visitCount);
     }
 

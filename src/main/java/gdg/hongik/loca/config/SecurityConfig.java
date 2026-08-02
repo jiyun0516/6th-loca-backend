@@ -52,7 +52,6 @@ public class SecurityConfig {
                                 "/api/places/public/**",
                                 "/api/places/*/reviews"
                         ).permitAll()
-                        .requestMatchers("/api/admin/**").denyAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

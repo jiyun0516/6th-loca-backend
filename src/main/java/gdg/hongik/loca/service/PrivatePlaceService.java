@@ -24,54 +24,65 @@ public class PrivatePlaceService {
 
     private final PrivatePlaceRepository privatePlaceRepository;
 
-    // 임시 userId, JWT 도입 시 토큰 추출로 교체
-    private static final Integer TEMP_USER_ID = 1;
-
     // 개인 장소 생성
     @Transactional
-    public PrivatePlaceResponse create(@Valid PrivatePlaceCreateRequest request) {
+    public PrivatePlaceResponse create(
+            Integer userId,
+            @Valid PrivatePlaceCreateRequest request
+    ) {
         PrivatePlace place = PrivatePlace.builder()
-                .userId(TEMP_USER_ID)
+                .userId(userId)
                 .name(request.name())
                 .address(request.address())
                 .lat(request.lat())
                 .lng(request.lng())
                 .build();
+
         return PrivatePlaceResponse.from(privatePlaceRepository.save(place));
     }
 
     // 사용자 소유 활성 장소 목록 조회
-    public List<PrivatePlaceResponse> getPlaces() {
-        return privatePlaceRepository.findByUserIdAndDeletedAtIsNull(TEMP_USER_ID).stream()
+    public List<PrivatePlaceResponse> getPlaces(Integer userId) {
+        return privatePlaceRepository
+                .findByUserIdAndDeletedAtIsNull(userId)
+                .stream()
                 .map(PrivatePlaceResponse::from)
                 .toList();
     }
 
     // 사용자 소유 활성 장소 단건 조회
-    public PrivatePlaceResponse getPlace(Integer placeId) {
-        return PrivatePlaceResponse.from(findActiveOwned(placeId));
+    public PrivatePlaceResponse getPlace(Integer userId, Integer placeId) {
+        return PrivatePlaceResponse.from(findActiveOwned(userId, placeId));
     }
 
     // 장소 수정 (dirty checking, save 미사용)
     @Transactional
-    public PrivatePlaceResponse updatePlace(Integer placeId, @Valid PrivatePlaceUpdateRequest request) {
-        PrivatePlace place = findActiveOwned(placeId);
+    public PrivatePlaceResponse updatePlace(
+            Integer userId,
+            Integer placeId,
+            @Valid PrivatePlaceUpdateRequest request
+    ) {
+        PrivatePlace place = findActiveOwned(userId, placeId);
+
         place.setName(request.name());
         place.setAddress(request.address());
         place.setLat(request.lat());
         place.setLng(request.lng());
+
         return PrivatePlaceResponse.from(place);
     }
 
     // 장소 소프트 삭제
     @Transactional
-    public void deletePlace(Integer placeId) {
-        findActiveOwned(placeId).setDeletedAt(OffsetDateTime.now());
+    public void deletePlace(Integer userId, Integer placeId) {
+        findActiveOwned(userId, placeId)
+                .setDeletedAt(OffsetDateTime.now());
     }
 
     // 사용자 소유 활성 장소 조회 헬퍼, 없으면 예외
-    private PrivatePlace findActiveOwned(Integer placeId) {
-        return privatePlaceRepository.findByPlaceIdAndUserIdAndDeletedAtIsNull(placeId, TEMP_USER_ID)
+    private PrivatePlace findActiveOwned(Integer userId, Integer placeId) {
+        return privatePlaceRepository
+                .findByPlaceIdAndUserIdAndDeletedAtIsNull(placeId, userId)
                 .orElseThrow(() -> new PlaceNotFoundException(placeId));
     }
 }

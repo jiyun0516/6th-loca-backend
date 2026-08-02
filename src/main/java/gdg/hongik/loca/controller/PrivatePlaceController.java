@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+
 import java.util.List;
 
 // 개인 장소 API
@@ -29,32 +31,33 @@ public class PrivatePlaceController {
 
     // 개인 장소 등록
     @PostMapping
-    public ResponseEntity<PrivatePlaceResponse> create(@Valid @RequestBody PrivatePlaceCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(privatePlaceService.create(request));
+    public ResponseEntity<PrivatePlaceResponse> create(@AuthenticationPrincipal Integer userId, @Valid @RequestBody PrivatePlaceCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(privatePlaceService.create(userId, request));
     }
 
     // 개인 장소 목록 조회
     @GetMapping
-    public List<PrivatePlaceResponse> getPlaces() {
-        return privatePlaceService.getPlaces();
+    public List<PrivatePlaceResponse> getPlaces(@AuthenticationPrincipal Integer userId) {
+        return privatePlaceService.getPlaces(userId);
     }
 
     // 개인 장소 단건 조회
     @GetMapping("/{placeId}")
-    public PrivatePlaceResponse getPlace(@PathVariable Integer placeId) {
-        return privatePlaceService.getPlace(placeId);
+    public PrivatePlaceResponse getPlace(@AuthenticationPrincipal Integer userId, @PathVariable Integer placeId) {
+        return privatePlaceService.getPlace(userId, placeId);
     }
 
     // 개인 장소 수정
     @PutMapping("/{placeId}")
-    public PrivatePlaceResponse update(@PathVariable Integer placeId, @Valid @RequestBody PrivatePlaceUpdateRequest request) {
-        return privatePlaceService.updatePlace(placeId, request);
+    public PrivatePlaceResponse update(@AuthenticationPrincipal Integer userId, @PathVariable Integer placeId, @Valid @RequestBody PrivatePlaceUpdateRequest request) {
+        return privatePlaceService.updatePlace(userId, placeId, request);
     }
 
     // 개인 장소 삭제
     @DeleteMapping("/{placeId}")
-    public ResponseEntity<Void> delete(@PathVariable Integer placeId) {
-        privatePlaceService.deletePlace(placeId);
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal Integer userId, @PathVariable Integer placeId) {
+        privatePlaceService.deletePlace(userId, placeId);
         return ResponseEntity.noContent().build();
     }
 }

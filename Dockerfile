@@ -26,4 +26,5 @@ USER appuser
 # Render는 컨테이너가 $PORT를 리스닝하길 기대함 (application.properties에서 server.port=${PORT:8080} 설정됨)
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# 컨테이너 메모리(Render 무료 512MB) 대비 힙 상한 지정
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=70", "-jar", "/app/app.jar"]
