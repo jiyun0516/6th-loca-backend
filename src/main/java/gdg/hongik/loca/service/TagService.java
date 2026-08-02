@@ -6,17 +6,14 @@ import gdg.hongik.loca.entity.Tag;
 import gdg.hongik.loca.exception.DuplicateTagNameException;
 import gdg.hongik.loca.exception.TagNotFoundException;
 import gdg.hongik.loca.repository.TagRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 // 태그 도메인 서비스 계층
 @Service
-@Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TagService {
@@ -35,7 +32,7 @@ public class TagService {
      * name이 이미 존재하면 {@link DuplicateTagNameException}을 던진다.
      */
     @Transactional
-    public TagResponse createTag(@Valid TagCreateRequest request) {
+    public TagResponse createTag(TagCreateRequest request) {
         tagRepository.findByName(request.name())
                 .ifPresent(existing -> {
                     throw new DuplicateTagNameException(request.name());

@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 import java.util.Map;
@@ -20,7 +19,6 @@ import java.util.stream.Collectors;
 // 추천 도메인 서비스 계층
 // - Explore: 선택 태그 조합으로 미방문 장소 탐색
 @Service
-@Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class RecommendationService {
