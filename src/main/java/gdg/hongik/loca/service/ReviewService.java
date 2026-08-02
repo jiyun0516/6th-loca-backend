@@ -7,11 +7,9 @@ import gdg.hongik.loca.entity.VisitTag;
 import gdg.hongik.loca.exception.VisitRecordNotFoundException;
 import gdg.hongik.loca.repository.VisitRecordRepository;
 import gdg.hongik.loca.repository.VisitTagRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -21,7 +19,6 @@ import java.util.Set;
 
 // 방문 후기(리뷰) 도메인 서비스 계층
 @Service
-@Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReviewService {
@@ -38,7 +35,7 @@ public class ReviewService {
     // - VisitRecord 저장 -> visit_tags 저장 -> 선호도 갱신 순서
     // - visitedAt 미수신 시 기록 시각으로 대체
     @Transactional
-    public ReviewResponseDto create(@Valid ReviewCreateRequestDto request) {
+    public ReviewResponseDto create(ReviewCreateRequestDto request) {
         VisitRecord record = VisitRecord.builder()
                 .userId(TEMP_USER_ID)
                 .placeId(request.getPlaceId())
@@ -76,7 +73,7 @@ public class ReviewService {
     // - dirty checking
     // - 키워드/이미지 컬렉션과 태그는 전체 교체
     @Transactional
-    public ReviewResponseDto update(Long visitId, @Valid ReviewCreateRequestDto request) {
+    public ReviewResponseDto update(Long visitId, ReviewCreateRequestDto request) {
         VisitRecord record = findOwned(visitId);
         record.setTitle(request.getTitle());
         record.setContent(request.getContent());

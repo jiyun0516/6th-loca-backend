@@ -13,11 +13,9 @@ import gdg.hongik.loca.repository.PlacePreferenceRepository;
 import gdg.hongik.loca.repository.PublicPlaceRepository;
 import gdg.hongik.loca.repository.TagRepository;
 import gdg.hongik.loca.repository.VisitRecordRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
@@ -26,7 +24,6 @@ import java.util.List;
  * 기본 CRUD를 담당한다.
  */
 @Service
-@Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PublicPlaceService {
@@ -41,7 +38,7 @@ public class PublicPlaceService {
      * kakaoPlaceId가 이미 존재하면 {@link DuplicateKakaoPlaceIdException}을 던진다.
      */
     @Transactional
-    public PlaceResponse create(@Valid PlaceCreateRequest request) {
+    public PlaceResponse create(PlaceCreateRequest request) {
         placeRepository.findByKakaoPlaceId(request.kakaoPlaceId())
                 .ifPresent(existing -> {
                     throw new DuplicateKakaoPlaceIdException(request.kakaoPlaceId());
@@ -82,7 +79,7 @@ public class PublicPlaceService {
      * 장소를 수정한다. 변경 감지(dirty checking)로 반영한다.
      */
     @Transactional
-    public PlaceResponse updatePlace(Integer placeId, @Valid PlaceUpdateRequest request) {
+    public PlaceResponse updatePlace(Integer placeId, PlaceUpdateRequest request) {
         PublicPlace place = findById(placeId);
 
         place.setName(request.name());
