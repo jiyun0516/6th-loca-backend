@@ -7,9 +7,11 @@ COPY gradlew ./
 COPY gradle ./gradle
 COPY build.gradle settings.gradle ./
 RUN chmod +x gradlew
-RUN ./gradlew dependencies --no-daemon || return 0
 
-# 소스 복사 후 빌드 (테스트는 배포 이미지 빌드 단계에서 생략)
+# 캐싱 목적이라 실패해도 무시
+RUN ./gradlew dependencies --no-daemon || true
+
+# 소스 복사 후 빌드 (테스트는 제외)
 COPY src ./src
 RUN ./gradlew bootJar --no-daemon -x test
 
