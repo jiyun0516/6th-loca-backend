@@ -25,7 +25,7 @@ public class PublicPlaceController {
         return placeService.getPlaces();
     }
 
-    // 장소 상세 조회(태그, 평균 평점 포함)
+    // 장소 상세 조회 (태그, 방문 횟수 포함)
     @GetMapping("/{placeId}")
     public PlaceDetailResponse getPlace(@PathVariable Integer placeId) {
         return placeService.getPlace(placeId);
