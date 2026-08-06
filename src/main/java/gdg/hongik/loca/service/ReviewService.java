@@ -2,9 +2,12 @@ package gdg.hongik.loca.service;
 
 import gdg.hongik.loca.dto.review.ReviewCreateRequestDto;
 import gdg.hongik.loca.dto.review.ReviewResponseDto;
+import gdg.hongik.loca.entity.Tag;
 import gdg.hongik.loca.entity.VisitRecord;
 import gdg.hongik.loca.entity.VisitTag;
+import gdg.hongik.loca.exception.TagNotFoundException;
 import gdg.hongik.loca.exception.VisitRecordNotFoundException;
+import gdg.hongik.loca.repository.TagRepository;
 import gdg.hongik.loca.repository.VisitRecordRepository;
 import gdg.hongik.loca.repository.VisitTagRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 // 방문 후기(리뷰) 도메인 서비스 계층
 @Service
@@ -25,6 +29,7 @@ public class ReviewService {
 
     private final VisitRecordRepository visitRecordRepository;
     private final VisitTagRepository visitTagRepository;
+    private final TagRepository tagRepository;
     private final UserPreferenceUpdater userPreferenceUpdater;
     private final PlacePreferenceUpdater placePreferenceUpdater;
 
@@ -110,19 +115,34 @@ public class ReviewService {
     }
 
     // 선택 태그 저장
-    // - 미존재 ID는 FK 위반, 중복 ID는 PK 위반 -> 400 (별도 검증 로직 없음)
+    // - 같은 리뷰 안의 중복 tagId는 하나로 합침
+    // - 미존재 tagId -> TagNotFoundException
     private List<Integer> saveTags(Long visitId, List<Integer> tagIds) {
         if (tagIds == null || tagIds.isEmpty()) {
             return List.of();
         }
-        List<VisitTag> rows = tagIds.stream()
+
+        List<Integer> distinctIds = tagIds.stream().distinct().toList();
+
+        // tagId 검증
+        Set<Integer> found = tagRepository.findAllById(distinctIds).stream()
+                .map(Tag::getTagId)
+                .collect(Collectors.toSet());
+        List<Integer> missing = distinctIds.stream()
+                .filter(id -> !found.contains(id))
+                .toList();
+        if (!missing.isEmpty()) {
+            throw new TagNotFoundException(missing);
+        }
+
+        List<VisitTag> rows = distinctIds.stream()
                 .map(tagId -> VisitTag.builder()
                         .visitId(visitId)
                         .tagId(tagId)
                         .build())
                 .toList();
         visitTagRepository.saveAll(rows);
-        return tagIds;
+        return distinctIds;
     }
 
     // 방문 기록의 태그 ID 목록 조회
