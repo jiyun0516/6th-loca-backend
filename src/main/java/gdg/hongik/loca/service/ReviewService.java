@@ -20,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -70,8 +71,22 @@ public class ReviewService {
     // 내 방문 후기 목록
     // - visitedAt 내림차순
     public List<ReviewResponseDto> list() {
-        return visitRecordRepository.findByUserIdOrderByVisitedAtDesc(TEMP_USER_ID).stream()
-                .map(r -> ReviewResponseDto.from(r, findTagIds(r.getVisitId())))
+        List<VisitRecord> records = visitRecordRepository.findByUserIdOrderByVisitedAtDesc(TEMP_USER_ID);
+        if (records.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> visitIds = records.stream()
+                .map(VisitRecord::getVisitId)
+                .toList();
+
+        Map<Long, List<Integer>> tagIdsByVisitId = visitTagRepository.findByVisitIdIn(visitIds).stream()
+                .collect(Collectors.groupingBy(
+                        VisitTag::getVisitId,
+                        Collectors.mapping(VisitTag::getTagId, Collectors.toList())));
+
+        return records.stream()
+                .map(r -> ReviewResponseDto.from(r, tagIdsByVisitId.getOrDefault(r.getVisitId(), List.of())))
                 .toList();
     }
 
