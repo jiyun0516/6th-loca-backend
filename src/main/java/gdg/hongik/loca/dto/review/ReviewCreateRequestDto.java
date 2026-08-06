@@ -42,7 +42,8 @@ public class ReviewCreateRequestDto {
 
     // 선택 태그 ID 목록 (추천 점수용, visit_tags)
     // - 최대 5개
-    // - 미존재 ID는 FK 위반, 중복 ID는 PK 위반 -> 400 (별도 검증 로직 없음)
+    // - 같은 리뷰 안의 중복은 하나로 합쳐짐
+    // - 미존재 tagId -> 404
     @Size(max = 5, message = "태그는 최대 5개까지 선택할 수 있습니다")
     private List<Integer> tagIds;
 
