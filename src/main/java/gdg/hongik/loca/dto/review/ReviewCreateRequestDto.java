@@ -1,5 +1,6 @@
 package gdg.hongik.loca.dto.review;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,7 @@ import gdg.hongik.loca.enums.CompanionType;
 public class ReviewCreateRequestDto {
 
     // 방문한 장소 ID (엔티티 place_id, not-null)
+    @NotNull(message = "placeId는 필수입니다")
     private Integer placeId;
 
     // 오늘의 제목
