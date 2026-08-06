@@ -2,6 +2,7 @@ package gdg.hongik.loca.service;
 
 import gdg.hongik.loca.dto.review.ReviewCreateRequestDto;
 import gdg.hongik.loca.dto.review.ReviewResponseDto;
+import gdg.hongik.loca.dto.review.ReviewUpdateRequest;
 import gdg.hongik.loca.entity.Tag;
 import gdg.hongik.loca.entity.VisitRecord;
 import gdg.hongik.loca.entity.VisitTag;
@@ -98,21 +99,42 @@ public class ReviewService {
     }
 
     // 내 방문 후기 수정
-    // - 키워드/이미지 컬렉션과 태그는 전체 교체
+    // - 모든 필드는 null이면 기존 값 유지
+    // - 컬렉션은 null이면 유지, []이면 전체 삭제
+    // - 컬렉션은 참조를 바꾸지 않고 내용만 교체
     @Transactional
-    public ReviewResponseDto update(Long visitId, ReviewCreateRequestDto request) {
+    public ReviewResponseDto update(Long visitId, ReviewUpdateRequest request) {
         VisitRecord record = findOwned(visitId);
-        record.setTitle(request.getTitle());
-        record.setContent(request.getContent());
-        record.setCompanion(request.getCompanion());
-        record.setKeywords(toSet(request.getKeywords()));
-        record.setImageUrls(toList(request.getImageUrls()));
-        if (request.getVisitedAt() != null) {
-            record.setVisitedAt(request.getVisitedAt());
+
+        // 필드별 업데이트
+        if (request.title() != null) {
+            record.setTitle(request.title());
+        }
+        if (request.content() != null) {
+            record.setContent(request.content());
+        }
+        if (request.companion() != null) {
+            record.setCompanion(request.companion());
+        }
+        if (request.visitedAt() != null) {
+            record.setVisitedAt(request.visitedAt());
+        }
+        if (request.keywords() != null) {
+            record.getKeywords().clear();
+            record.getKeywords().addAll(request.keywords());
+        }
+        if (request.imageUrls() != null) {
+            record.getImageUrls().clear();
+            record.getImageUrls().addAll(request.imageUrls());
         }
 
-        visitTagRepository.deleteByVisitId(visitId);
-        List<Integer> tagIds = saveTags(visitId, request.getTagIds());
+        List<Integer> tagIds;
+        if (request.tagIds() == null) {
+            tagIds = findTagIds(visitId);
+        } else {
+            visitTagRepository.deleteByVisitId(visitId);
+            tagIds = saveTags(visitId, request.tagIds());
+        }
         refreshPreferences(record.getPlaceId());
 
         return ReviewResponseDto.from(record, tagIds);
