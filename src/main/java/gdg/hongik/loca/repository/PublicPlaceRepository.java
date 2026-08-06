@@ -13,4 +13,6 @@ public interface PublicPlaceRepository extends JpaRepository<PublicPlace, Intege
     List<PublicPlace> findAllByDeletedAtIsNull();
 
     Optional<PublicPlace> findByPlaceIdAndDeletedAtIsNull(Integer placeId);
+
+    boolean existsByPlaceIdAndDeletedAtIsNull(Integer placeId);
 }

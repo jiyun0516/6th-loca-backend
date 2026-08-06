@@ -5,8 +5,10 @@ import gdg.hongik.loca.dto.review.ReviewResponseDto;
 import gdg.hongik.loca.entity.Tag;
 import gdg.hongik.loca.entity.VisitRecord;
 import gdg.hongik.loca.entity.VisitTag;
+import gdg.hongik.loca.exception.PlaceNotFoundException;
 import gdg.hongik.loca.exception.TagNotFoundException;
 import gdg.hongik.loca.exception.VisitRecordNotFoundException;
+import gdg.hongik.loca.repository.PublicPlaceRepository;
 import gdg.hongik.loca.repository.TagRepository;
 import gdg.hongik.loca.repository.VisitRecordRepository;
 import gdg.hongik.loca.repository.VisitTagRepository;
@@ -30,6 +32,7 @@ public class ReviewService {
     private final VisitRecordRepository visitRecordRepository;
     private final VisitTagRepository visitTagRepository;
     private final TagRepository tagRepository;
+    private final PublicPlaceRepository publicPlaceRepository;
     private final UserPreferenceUpdater userPreferenceUpdater;
     private final PlacePreferenceUpdater placePreferenceUpdater;
 
@@ -37,10 +40,15 @@ public class ReviewService {
     private static final Integer TEMP_USER_ID = 1;
 
     // 방문 후기 생성
-    // - VisitRecord 저장 -> visit_tags 저장 -> 선호도 갱신 순서
+    // - 순서 : 장소 검증 -> 리뷰 저장 -> 리뷰 태그 저장 -> 선호도 갱신
     // - visitedAt 미수신 시 기록 시각으로 대체
     @Transactional
     public ReviewResponseDto create(ReviewCreateRequestDto request) {
+        // 장소가 존재하지 않거나 삭제된 장소일 시 PlaceNotFoundException 발생
+        if (!publicPlaceRepository.existsByPlaceIdAndDeletedAtIsNull(request.getPlaceId())) {
+            throw new PlaceNotFoundException(request.getPlaceId());
+        }
+
         VisitRecord record = VisitRecord.builder()
                 .userId(TEMP_USER_ID)
                 .placeId(request.getPlaceId())
@@ -75,7 +83,6 @@ public class ReviewService {
     }
 
     // 내 방문 후기 수정
-    // - dirty checking
     // - 키워드/이미지 컬렉션과 태그는 전체 교체
     @Transactional
     public ReviewResponseDto update(Long visitId, ReviewCreateRequestDto request) {
@@ -96,7 +103,7 @@ public class ReviewService {
         return ReviewResponseDto.from(record, tagIds);
     }
 
-    // 내 방문 후기 삭제(하드 삭제)
+    // 내 방문 후기 삭제(소프트 삭제)
     @Transactional
     public void delete(Long visitId) {
         VisitRecord record = findOwned(visitId);
@@ -107,8 +114,8 @@ public class ReviewService {
         refreshPreferences(placeId);
     }
 
-    // 소유 단건 조회 헬퍼
-    // - 미존재/소유자 불일치 -> VisitRecordNotFoundException
+    // 리뷰 소유 단건 조회
+    // - visitId가 존재하지 않거나 소유자가 불일치할 시 VisitRecordNotFoundException 발생
     private VisitRecord findOwned(Long visitId) {
         return visitRecordRepository.findByVisitIdAndUserId(visitId, TEMP_USER_ID)
                 .orElseThrow(() -> new VisitRecordNotFoundException(visitId));
@@ -116,7 +123,7 @@ public class ReviewService {
 
     // 선택 태그 저장
     // - 같은 리뷰 안의 중복 tagId는 하나로 합침
-    // - 미존재 tagId -> TagNotFoundException
+    // - tagId가 존재하지 않을 시 TagNotFoundException 발생
     private List<Integer> saveTags(Long visitId, List<Integer> tagIds) {
         if (tagIds == null || tagIds.isEmpty()) {
             return List.of();
