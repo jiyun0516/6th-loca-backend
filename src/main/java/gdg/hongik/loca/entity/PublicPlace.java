@@ -42,4 +42,7 @@ public class PublicPlace {
 
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
+
+    @Column(name = "preference_dirty_at")
+    private OffsetDateTime preferenceDirtyAt;
 }

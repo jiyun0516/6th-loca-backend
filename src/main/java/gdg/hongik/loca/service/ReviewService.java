@@ -128,14 +128,15 @@ public class ReviewService {
             record.getImageUrls().addAll(request.imageUrls());
         }
 
+        // 태그가 그대로면 선호도 값이 변할 수 없으므로 재집계를 건너뜀
         List<Integer> tagIds;
         if (request.tagIds() == null) {
             tagIds = findTagIds(visitId);
         } else {
             visitTagRepository.deleteByVisitId(visitId);
             tagIds = saveTags(visitId, request.tagIds());
+            refreshPreferences(record.getPlaceId());
         }
-        refreshPreferences(record.getPlaceId());
 
         return ReviewResponse.from(record, tagIds);
     }

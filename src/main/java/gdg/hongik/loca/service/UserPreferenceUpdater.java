@@ -31,7 +31,7 @@ public class UserPreferenceUpdater {
     public void refresh(Integer userId) {
         entityManager.flush();
 
-        List<TagScoreProjection> scores = visitTagRepository.aggregateByUserId(userId);
+        List<TagScoreProjection> scores = visitTagRepository.findTagScoresByUserId(userId);
 
         userPreferenceRepository.deleteByUserId(userId);
 
