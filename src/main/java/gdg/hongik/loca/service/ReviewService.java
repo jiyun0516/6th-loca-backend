@@ -1,7 +1,7 @@
 package gdg.hongik.loca.service;
 
-import gdg.hongik.loca.dto.review.ReviewCreateRequestDto;
-import gdg.hongik.loca.dto.review.ReviewResponseDto;
+import gdg.hongik.loca.dto.review.ReviewCreateRequest;
+import gdg.hongik.loca.dto.review.ReviewResponse;
 import gdg.hongik.loca.dto.review.ReviewUpdateRequest;
 import gdg.hongik.loca.entity.Tag;
 import gdg.hongik.loca.entity.VisitRecord;
@@ -45,33 +45,33 @@ public class ReviewService {
     // - 순서 : 장소 검증 -> 리뷰 저장 -> 리뷰 태그 저장 -> 선호도 갱신
     // - visitedAt 미수신 시 기록 시각으로 대체
     @Transactional
-    public ReviewResponseDto create(ReviewCreateRequestDto request) {
+    public ReviewResponse create(ReviewCreateRequest request) {
         // 장소가 존재하지 않거나 삭제된 장소일 시 PlaceNotFoundException 발생
-        if (!publicPlaceRepository.existsByPlaceIdAndDeletedAtIsNull(request.getPlaceId())) {
-            throw new PlaceNotFoundException(request.getPlaceId());
+        if (!publicPlaceRepository.existsByPlaceIdAndDeletedAtIsNull(request.placeId())) {
+            throw new PlaceNotFoundException(request.placeId());
         }
 
         VisitRecord record = VisitRecord.builder()
                 .userId(TEMP_USER_ID)
-                .placeId(request.getPlaceId())
-                .title(request.getTitle())
-                .content(request.getContent())
-                .companion(request.getCompanion())
-                .keywords(toSet(request.getKeywords()))
-                .imageUrls(toList(request.getImageUrls()))
-                .visitedAt(request.getVisitedAt() == null ? OffsetDateTime.now() : request.getVisitedAt())
+                .placeId(request.placeId())
+                .title(request.title())
+                .content(request.content())
+                .companion(request.companion())
+                .keywords(toSet(request.keywords()))
+                .imageUrls(toList(request.imageUrls()))
+                .visitedAt(request.visitedAt() == null ? OffsetDateTime.now() : request.visitedAt())
                 .build();
         VisitRecord saved = visitRecordRepository.save(record);
 
-        List<Integer> tagIds = saveTags(saved.getVisitId(), request.getTagIds());
+        List<Integer> tagIds = saveTags(saved.getVisitId(), request.tagIds());
         refreshPreferences(saved.getPlaceId());
 
-        return ReviewResponseDto.from(saved, tagIds);
+        return ReviewResponse.from(saved, tagIds);
     }
 
     // 내 방문 후기 목록
     // - visitedAt 내림차순
-    public List<ReviewResponseDto> list() {
+    public List<ReviewResponse> list() {
         List<VisitRecord> records = visitRecordRepository.findByUserIdOrderByVisitedAtDesc(TEMP_USER_ID);
         if (records.isEmpty()) {
             return List.of();
@@ -87,15 +87,15 @@ public class ReviewService {
                         Collectors.mapping(VisitTag::getTagId, Collectors.toList())));
 
         return records.stream()
-                .map(r -> ReviewResponseDto.from(r, tagIdsByVisitId.getOrDefault(r.getVisitId(), List.of())))
+                .map(r -> ReviewResponse.from(r, tagIdsByVisitId.getOrDefault(r.getVisitId(), List.of())))
                 .toList();
     }
 
     // 내 방문 후기 상세
     // - 키워드/태그/이미지 포함
-    public ReviewResponseDto detail(Long visitId) {
+    public ReviewResponse detail(Long visitId) {
         VisitRecord record = findOwned(visitId);
-        return ReviewResponseDto.from(record, findTagIds(visitId));
+        return ReviewResponse.from(record, findTagIds(visitId));
     }
 
     // 내 방문 후기 수정
@@ -103,7 +103,7 @@ public class ReviewService {
     // - 컬렉션은 null이면 유지, []이면 전체 삭제
     // - 컬렉션은 참조를 바꾸지 않고 내용만 교체
     @Transactional
-    public ReviewResponseDto update(Long visitId, ReviewUpdateRequest request) {
+    public ReviewResponse update(Long visitId, ReviewUpdateRequest request) {
         VisitRecord record = findOwned(visitId);
 
         // 필드별 업데이트
@@ -137,7 +137,7 @@ public class ReviewService {
         }
         refreshPreferences(record.getPlaceId());
 
-        return ReviewResponseDto.from(record, tagIds);
+        return ReviewResponse.from(record, tagIds);
     }
 
     // 내 방문 후기 삭제(소프트 삭제)

@@ -1,7 +1,7 @@
 package gdg.hongik.loca.controller;
 
-import gdg.hongik.loca.dto.review.ReviewCreateRequestDto;
-import gdg.hongik.loca.dto.review.ReviewResponseDto;
+import gdg.hongik.loca.dto.review.ReviewCreateRequest;
+import gdg.hongik.loca.dto.review.ReviewResponse;
 import gdg.hongik.loca.dto.review.ReviewUpdateRequest;
 import gdg.hongik.loca.service.ReviewService;
 import jakarta.validation.Valid;
@@ -30,26 +30,26 @@ public class ReviewController {
     // POST /api/users/me/reviews - 후기 생성
     // - 성공 시 201
     @PostMapping
-    public ResponseEntity<ReviewResponseDto> create(@Valid @RequestBody ReviewCreateRequestDto request) {
-        ReviewResponseDto response = reviewService.create(request);
+    public ResponseEntity<ReviewResponse> create(@Valid @RequestBody ReviewCreateRequest request) {
+        ReviewResponse response = reviewService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     // GET /api/users/me/reviews - 내 후기 목록
     @GetMapping
-    public List<ReviewResponseDto> list() {
+    public List<ReviewResponse> list() {
         return reviewService.list();
     }
 
     // GET /api/users/me/reviews/{visitId} - 후기 상세
     @GetMapping("/{visitId}")
-    public ReviewResponseDto detail(@PathVariable Long visitId) {
+    public ReviewResponse detail(@PathVariable Long visitId) {
         return reviewService.detail(visitId);
     }
 
     // PUT /api/users/me/reviews/{visitId} - 후기 수정
     @PutMapping("/{visitId}")
-    public ReviewResponseDto update(
+    public ReviewResponse update(
             @PathVariable Long visitId,
             @Valid @RequestBody ReviewUpdateRequest request
     ) {
