@@ -32,7 +32,7 @@ public interface VisitTagRepository extends JpaRepository<VisitTag, VisitTagId> 
             "from VisitTag vt, VisitRecord v " +
             "where v.visitId = vt.visitId and v.userId = :userId " +
             "group by vt.tagId")
-    List<TagScoreProjection> aggregateByUserId(@Param("userId") Integer userId);
+    List<TagScoreProjection> findTagScoresByUserId(@Param("userId") Integer userId);
 
     // 장소 태그 점수 재집계용 집계
     // - count(distinct user_id): 한 사람은 한 표(반복 방문 흡수)
@@ -40,5 +40,5 @@ public interface VisitTagRepository extends JpaRepository<VisitTag, VisitTagId> 
             "from VisitTag vt, VisitRecord v " +
             "where v.visitId = vt.visitId and v.placeId = :placeId " +
             "group by vt.tagId")
-    List<TagScoreProjection> aggregateByPlaceId(@Param("placeId") Integer placeId);
+    List<TagScoreProjection> findTagScoresByPlaceId(@Param("placeId") Integer placeId);
 }
