@@ -2,24 +2,21 @@ package gdg.hongik.loca.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
+// 개인 장소
 @Entity
 @Table(name = "private_places")
+@DiscriminatorValue("PRIVATE")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
-public class PrivatePlace {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "place_id")
-    private Integer placeId;
+@SuperBuilder
+public class PrivatePlace extends Place {
 
     // 소유 사용자 (FK users.user_id)
     @Column(name = "user_id", nullable = false)
