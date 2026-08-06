@@ -2,6 +2,7 @@ package gdg.hongik.loca.controller;
 
 import gdg.hongik.loca.dto.review.ReviewCreateRequestDto;
 import gdg.hongik.loca.dto.review.ReviewResponseDto;
+import gdg.hongik.loca.dto.review.ReviewUpdateRequest;
 import gdg.hongik.loca.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,7 @@ public class ReviewController {
     @PutMapping("/{visitId}")
     public ReviewResponseDto update(
             @PathVariable Long visitId,
-            @Valid @RequestBody ReviewCreateRequestDto request
+            @Valid @RequestBody ReviewUpdateRequest request
     ) {
         return reviewService.update(visitId, request);
     }
