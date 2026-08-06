@@ -6,14 +6,13 @@ import gdg.hongik.loca.dto.place.PlaceResponse;
 import gdg.hongik.loca.dto.place.PlaceUpdateRequest;
 import gdg.hongik.loca.dto.tag.TagResponse;
 import gdg.hongik.loca.entity.PublicPlace;
-import gdg.hongik.loca.entity.PlacePreference;
 import gdg.hongik.loca.exception.DuplicateKakaoPlaceIdException;
 import gdg.hongik.loca.exception.PlaceNotFoundException;
 import gdg.hongik.loca.repository.PlacePreferenceRepository;
 import gdg.hongik.loca.repository.PublicPlaceRepository;
-import gdg.hongik.loca.repository.TagRepository;
 import gdg.hongik.loca.repository.VisitRecordRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +26,10 @@ public class PublicPlaceService {
 
     private final PublicPlaceRepository placeRepository;
     private final PlacePreferenceRepository placePreferenceRepository;
-    private final TagRepository tagRepository;
     private final VisitRecordRepository visitRecordRepository;
+
+    // 장소 상세에 노출할 대표 태그 개수
+    private static final int PLACE_TAG_LIMIT = 5;
 
     // 장소 생성
     // 활성 장소와 kakaoPlaceId가 겹칠 경우 DuplicateKakaoPlaceIdException 발생
@@ -102,13 +103,12 @@ public class PublicPlaceService {
         place.setDeletedAt(java.time.OffsetDateTime.now());
     }
 
-    // 장소에 매핑된 태그 목록 조회
-    // place_preferences -> tags
+    // 장소 대표 태그 조회
+    // place_preferences 점수 상위 PLACE_TAG_LIMIT 개
     private List<TagResponse> getPlaceTags(Integer placeId) {
-        List<Integer> tagIds = placePreferenceRepository.findByPlaceId(placeId).stream()
-                .map(PlacePreference::getTagId)
-                .toList();
-        return tagRepository.findAllById(tagIds).stream()
+        return placePreferenceRepository
+                .findTopTagsByPlaceId(placeId, PageRequest.of(0, PLACE_TAG_LIMIT))
+                .stream()
                 .map(TagResponse::from)
                 .toList();
     }
