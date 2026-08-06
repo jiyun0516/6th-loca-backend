@@ -47,6 +47,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(e.getMessage()));
     }
 
+    // 리뷰에 사용 중인 태그 삭제 시도 - 409
+    @ExceptionHandler(TagInUseException.class)
+    public ResponseEntity<ErrorResponse> handleTagInUse(TagInUseException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
     // 리뷰 예외 처리
 
     // 리뷰 검색 시 미존재/소유자 불일치 - 404
