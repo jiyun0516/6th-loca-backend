@@ -3,6 +3,7 @@ package gdg.hongik.loca.repository;
 import gdg.hongik.loca.dto.recommendation.PlaceScoreProjection;
 import gdg.hongik.loca.entity.PlacePreference;
 import gdg.hongik.loca.entity.PlacePreferenceId;
+import gdg.hongik.loca.entity.Tag;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -13,7 +14,12 @@ import java.util.List;
 
 public interface PlacePreferenceRepository extends JpaRepository<PlacePreference, PlacePreferenceId> {
 
-    List<PlacePreference> findByPlaceId(Integer placeId);
+    // 장소 대표 태그 조회 (점수 상위 N개)
+    // 동점 시 tagId 오름차순으로 설정
+    @Query("select t from PlacePreference pp, Tag t " +
+            "where pp.tagId = t.tagId and pp.placeId = :placeId " +
+            "order by pp.score desc, t.tagId asc")
+    List<Tag> findTopTagsByPlaceId(@Param("placeId") Integer placeId, Pageable pageable);
 
     // Explore 후보 점수 집계
     // - 선택 태그(tagIds) 중 하나라도 가진 장소 후보(ANY)
