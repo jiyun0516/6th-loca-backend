@@ -14,6 +14,9 @@ public interface VisitTagRepository extends JpaRepository<VisitTag, VisitTagId> 
 
     List<VisitTag> findByVisitId(Long visitId);
 
+    // 목록 조회
+    List<VisitTag> findByVisitIdIn(List<Long> visitIds);
+
     boolean existsByTagId(Integer tagId);
 
     // 방문 기록의 태그 전체 삭제(태그 교체용)
