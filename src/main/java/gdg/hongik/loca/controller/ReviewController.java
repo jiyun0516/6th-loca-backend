@@ -8,16 +8,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -32,37 +24,48 @@ public class ReviewController {
     // POST /api/users/me/reviews - 후기 생성
     // - 성공 시 201
     @PostMapping
-    public ResponseEntity<ReviewResponse> create(@Valid @RequestBody ReviewCreateRequest request) {
-        ReviewResponse response = reviewService.create(request);
+    public ResponseEntity<ReviewResponse> create(
+            @AuthenticationPrincipal Integer userId,
+            @Valid @RequestBody ReviewCreateRequest request
+    ) {
+        ReviewResponse response = reviewService.create(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     // GET /api/users/me/reviews - 내 후기 목록
     @GetMapping
-    public List<ReviewResponse> list() {
-        return reviewService.list();
+    public List<ReviewResponse> list(
+            @AuthenticationPrincipal Integer userId
+    ) {
+        return reviewService.list(userId);
     }
 
     // GET /api/users/me/reviews/{visitId} - 후기 상세
     @GetMapping("/{visitId}")
-    public ReviewResponse detail(@PathVariable Long visitId) {
-        return reviewService.detail(visitId);
+    public ReviewResponse detail(
+            @AuthenticationPrincipal Integer userId,
+            @PathVariable Long visitId) {
+        return reviewService.detail(userId, visitId);
     }
 
     // PUT /api/users/me/reviews/{visitId} - 후기 수정
     @PutMapping("/{visitId}")
     public ReviewResponse update(
+            @AuthenticationPrincipal Integer userId,
             @PathVariable Long visitId,
             @Valid @RequestBody ReviewUpdateRequest request
     ) {
-        return reviewService.update(visitId, request);
+        return reviewService.update(userId, visitId, request);
     }
 
     // DELETE /api/users/me/reviews/{visitId} - 후기 삭제(soft-delete)
     // - 성공 시 204
     @DeleteMapping("/{visitId}")
-    public ResponseEntity<Void> delete(@PathVariable Long visitId) {
-        reviewService.delete(visitId);
+    public ResponseEntity<Void> delete(
+            @AuthenticationPrincipal Integer userId,
+            @PathVariable Long visitId
+    ) {
+        reviewService.delete(userId, visitId);
         return ResponseEntity.noContent().build();
     }
 }
