@@ -6,18 +6,15 @@ import gdg.hongik.loca.dto.place.PrivatePlaceUpdateRequest;
 import gdg.hongik.loca.entity.PrivatePlace;
 import gdg.hongik.loca.exception.PlaceNotFoundException;
 import gdg.hongik.loca.repository.PrivatePlaceRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
 // 개인 장소 도메인 서비스 계층
 @Service
-@Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PrivatePlaceService {
@@ -28,7 +25,7 @@ public class PrivatePlaceService {
     @Transactional
     public PrivatePlaceResponse create(
             Integer userId,
-            @Valid PrivatePlaceCreateRequest request
+            PrivatePlaceCreateRequest request
     ) {
         PrivatePlace place = PrivatePlace.builder()
                 .userId(userId)
@@ -60,7 +57,7 @@ public class PrivatePlaceService {
     public PrivatePlaceResponse updatePlace(
             Integer userId,
             Integer placeId,
-            @Valid PrivatePlaceUpdateRequest request
+            PrivatePlaceUpdateRequest request
     ) {
         PrivatePlace place = findActiveOwned(userId, placeId);
 
