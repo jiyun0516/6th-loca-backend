@@ -26,7 +26,8 @@ public class AdminPublicPlaceController {
     private final PublicPlaceService placeService;
 
     // POST /api/admin/places - 장소 등록
-    // - kakaoPlaceId 중복이면 409
+    // - 활성 장소와 kakaoPlaceId 중복이면 409
+    // - 삭제된 장소와 kakaoPlaceId 중복이면 복구
     // - 성공 시 201
     @PostMapping
     public ResponseEntity<PlaceResponse> create(@Valid @RequestBody PlaceCreateRequest request) {
@@ -45,7 +46,7 @@ public class AdminPublicPlaceController {
         return placeService.updatePlace(placeId, request);
     }
 
-    // DELETE /api/admin/places/{placeId} - 장소 삭제(하드 삭제)
+    // DELETE /api/admin/places/{placeId} - 장소 소프트 삭제
     // - 없으면 404
     // - 성공 시 204
     @DeleteMapping("/{placeId}")

@@ -9,8 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-// 태그 관리 API
-// - 조회/생성/삭제
+// 태그 조회 API
 @RestController
 @RequestMapping("/api/tags")
 @RequiredArgsConstructor

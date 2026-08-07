@@ -1,6 +1,7 @@
 package gdg.hongik.loca.exception;
 
 import gdg.hongik.loca.dto.common.ErrorResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -81,5 +82,14 @@ public class GlobalExceptionHandler {
     ) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse(e.getMessage()));
+    }
+
+    // 폴백 예외 처리
+
+    // 데이터 무결성 위반 - 400
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("요청 데이터가 제약 조건을 위반했습니다."));
     }
 }

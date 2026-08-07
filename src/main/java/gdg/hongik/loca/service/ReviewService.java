@@ -1,33 +1,40 @@
 package gdg.hongik.loca.service;
 
-import gdg.hongik.loca.dto.review.ReviewCreateRequestDto;
-import gdg.hongik.loca.dto.review.ReviewResponseDto;
+import gdg.hongik.loca.dto.review.ReviewCreateRequest;
+import gdg.hongik.loca.dto.review.ReviewResponse;
+import gdg.hongik.loca.dto.review.ReviewUpdateRequest;
+import gdg.hongik.loca.entity.Tag;
 import gdg.hongik.loca.entity.VisitRecord;
 import gdg.hongik.loca.entity.VisitTag;
+import gdg.hongik.loca.exception.PlaceNotFoundException;
+import gdg.hongik.loca.exception.TagNotFoundException;
 import gdg.hongik.loca.exception.VisitRecordNotFoundException;
+import gdg.hongik.loca.repository.PublicPlaceRepository;
+import gdg.hongik.loca.repository.TagRepository;
 import gdg.hongik.loca.repository.VisitRecordRepository;
 import gdg.hongik.loca.repository.VisitTagRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 // 방문 후기(리뷰) 도메인 서비스 계층
 @Service
-@Validated
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReviewService {
 
     private final VisitRecordRepository visitRecordRepository;
     private final VisitTagRepository visitTagRepository;
+    private final TagRepository tagRepository;
+    private final PublicPlaceRepository publicPlaceRepository;
     private final UserPreferenceUpdater userPreferenceUpdater;
     private final PlacePreferenceUpdater placePreferenceUpdater;
 
@@ -35,66 +42,106 @@ public class ReviewService {
     private static final Integer TEMP_USER_ID = 1;
 
     // 방문 후기 생성
-    // - VisitRecord 저장 -> visit_tags 저장 -> 선호도 갱신 순서
+    // - 순서 : 장소 검증 -> 리뷰 저장 -> 리뷰 태그 저장 -> 선호도 갱신
     // - visitedAt 미수신 시 기록 시각으로 대체
     @Transactional
-    public ReviewResponseDto create(@Valid ReviewCreateRequestDto request) {
+    public ReviewResponse create(ReviewCreateRequest request) {
+        // 장소가 존재하지 않거나 삭제된 장소일 시 PlaceNotFoundException 발생
+        if (!publicPlaceRepository.existsByPlaceIdAndDeletedAtIsNull(request.placeId())) {
+            throw new PlaceNotFoundException(request.placeId());
+        }
+
         VisitRecord record = VisitRecord.builder()
                 .userId(TEMP_USER_ID)
-                .placeId(request.getPlaceId())
-                .title(request.getTitle())
-                .content(request.getContent())
-                .companion(request.getCompanion())
-                .keywords(toSet(request.getKeywords()))
-                .imageUrls(toList(request.getImageUrls()))
-                .visitedAt(request.getVisitedAt() == null ? OffsetDateTime.now() : request.getVisitedAt())
+                .placeId(request.placeId())
+                .title(request.title())
+                .content(request.content())
+                .companion(request.companion())
+                .keywords(toSet(request.keywords()))
+                .imageUrls(toList(request.imageUrls()))
+                .visitedAt(request.visitedAt() == null ? OffsetDateTime.now() : request.visitedAt())
                 .build();
         VisitRecord saved = visitRecordRepository.save(record);
 
-        List<Integer> tagIds = saveTags(saved.getVisitId(), request.getTagIds());
+        List<Integer> tagIds = saveTags(saved.getVisitId(), request.tagIds());
         refreshPreferences(saved.getPlaceId());
 
-        return ReviewResponseDto.from(saved, tagIds);
+        return ReviewResponse.from(saved, tagIds);
     }
 
     // 내 방문 후기 목록
     // - visitedAt 내림차순
-    public List<ReviewResponseDto> list() {
-        return visitRecordRepository.findByUserIdOrderByVisitedAtDesc(TEMP_USER_ID).stream()
-                .map(r -> ReviewResponseDto.from(r, findTagIds(r.getVisitId())))
+    public List<ReviewResponse> list() {
+        List<VisitRecord> records = visitRecordRepository.findByUserIdOrderByVisitedAtDesc(TEMP_USER_ID);
+        if (records.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> visitIds = records.stream()
+                .map(VisitRecord::getVisitId)
+                .toList();
+
+        Map<Long, List<Integer>> tagIdsByVisitId = visitTagRepository.findByVisitIdIn(visitIds).stream()
+                .collect(Collectors.groupingBy(
+                        VisitTag::getVisitId,
+                        Collectors.mapping(VisitTag::getTagId, Collectors.toList())));
+
+        return records.stream()
+                .map(r -> ReviewResponse.from(r, tagIdsByVisitId.getOrDefault(r.getVisitId(), List.of())))
                 .toList();
     }
 
     // 내 방문 후기 상세
     // - 키워드/태그/이미지 포함
-    public ReviewResponseDto detail(Long visitId) {
+    public ReviewResponse detail(Long visitId) {
         VisitRecord record = findOwned(visitId);
-        return ReviewResponseDto.from(record, findTagIds(visitId));
+        return ReviewResponse.from(record, findTagIds(visitId));
     }
 
     // 내 방문 후기 수정
-    // - dirty checking
-    // - 키워드/이미지 컬렉션과 태그는 전체 교체
+    // - 모든 필드는 null이면 기존 값 유지
+    // - 컬렉션은 null이면 유지, []이면 전체 삭제
+    // - 컬렉션은 참조를 바꾸지 않고 내용만 교체
     @Transactional
-    public ReviewResponseDto update(Long visitId, @Valid ReviewCreateRequestDto request) {
+    public ReviewResponse update(Long visitId, ReviewUpdateRequest request) {
         VisitRecord record = findOwned(visitId);
-        record.setTitle(request.getTitle());
-        record.setContent(request.getContent());
-        record.setCompanion(request.getCompanion());
-        record.setKeywords(toSet(request.getKeywords()));
-        record.setImageUrls(toList(request.getImageUrls()));
-        if (request.getVisitedAt() != null) {
-            record.setVisitedAt(request.getVisitedAt());
+
+        // 필드별 업데이트
+        if (request.title() != null) {
+            record.setTitle(request.title());
+        }
+        if (request.content() != null) {
+            record.setContent(request.content());
+        }
+        if (request.companion() != null) {
+            record.setCompanion(request.companion());
+        }
+        if (request.visitedAt() != null) {
+            record.setVisitedAt(request.visitedAt());
+        }
+        if (request.keywords() != null) {
+            record.getKeywords().clear();
+            record.getKeywords().addAll(request.keywords());
+        }
+        if (request.imageUrls() != null) {
+            record.getImageUrls().clear();
+            record.getImageUrls().addAll(request.imageUrls());
         }
 
-        visitTagRepository.deleteByVisitId(visitId);
-        List<Integer> tagIds = saveTags(visitId, request.getTagIds());
-        refreshPreferences(record.getPlaceId());
+        // 태그가 그대로면 선호도 값이 변할 수 없으므로 재집계를 건너뜀
+        List<Integer> tagIds;
+        if (request.tagIds() == null) {
+            tagIds = findTagIds(visitId);
+        } else {
+            visitTagRepository.deleteByVisitId(visitId);
+            tagIds = saveTags(visitId, request.tagIds());
+            refreshPreferences(record.getPlaceId());
+        }
 
-        return ReviewResponseDto.from(record, tagIds);
+        return ReviewResponse.from(record, tagIds);
     }
 
-    // 내 방문 후기 삭제(하드 삭제)
+    // 내 방문 후기 삭제(소프트 삭제)
     @Transactional
     public void delete(Long visitId) {
         VisitRecord record = findOwned(visitId);
@@ -105,27 +152,42 @@ public class ReviewService {
         refreshPreferences(placeId);
     }
 
-    // 소유 단건 조회 헬퍼
-    // - 미존재/소유자 불일치 -> VisitRecordNotFoundException
+    // 리뷰 소유 단건 조회
+    // - visitId가 존재하지 않거나 소유자가 불일치할 시 VisitRecordNotFoundException 발생
     private VisitRecord findOwned(Long visitId) {
         return visitRecordRepository.findByVisitIdAndUserId(visitId, TEMP_USER_ID)
                 .orElseThrow(() -> new VisitRecordNotFoundException(visitId));
     }
 
     // 선택 태그 저장
-    // - 미존재 ID는 FK 위반, 중복 ID는 PK 위반 -> 400 (별도 검증 로직 없음)
+    // - 같은 리뷰 안의 중복 tagId는 하나로 합침
+    // - tagId가 존재하지 않을 시 TagNotFoundException 발생
     private List<Integer> saveTags(Long visitId, List<Integer> tagIds) {
         if (tagIds == null || tagIds.isEmpty()) {
             return List.of();
         }
-        List<VisitTag> rows = tagIds.stream()
+
+        List<Integer> distinctIds = tagIds.stream().distinct().toList();
+
+        // tagId 검증
+        Set<Integer> found = tagRepository.findAllById(distinctIds).stream()
+                .map(Tag::getTagId)
+                .collect(Collectors.toSet());
+        List<Integer> missing = distinctIds.stream()
+                .filter(id -> !found.contains(id))
+                .toList();
+        if (!missing.isEmpty()) {
+            throw new TagNotFoundException(missing);
+        }
+
+        List<VisitTag> rows = distinctIds.stream()
                 .map(tagId -> VisitTag.builder()
                         .visitId(visitId)
                         .tagId(tagId)
                         .build())
                 .toList();
         visitTagRepository.saveAll(rows);
-        return tagIds;
+        return distinctIds;
     }
 
     // 방문 기록의 태그 ID 목록 조회

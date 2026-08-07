@@ -14,7 +14,10 @@ public interface VisitTagRepository extends JpaRepository<VisitTag, VisitTagId> 
 
     List<VisitTag> findByVisitId(Long visitId);
 
-    List<VisitTag> findByTagId(Integer tagId);
+    // 목록 조회
+    List<VisitTag> findByVisitIdIn(List<Long> visitIds);
+
+    boolean existsByTagId(Integer tagId);
 
     // 방문 기록의 태그 전체 삭제(태그 교체용)
     // - 벌크 삭제(즉시 실행): 재저장 시 insert-before-delete 충돌 방지
@@ -29,7 +32,7 @@ public interface VisitTagRepository extends JpaRepository<VisitTag, VisitTagId> 
             "from VisitTag vt, VisitRecord v " +
             "where v.visitId = vt.visitId and v.userId = :userId " +
             "group by vt.tagId")
-    List<TagScoreProjection> aggregateByUserId(@Param("userId") Integer userId);
+    List<TagScoreProjection> findTagScoresByUserId(@Param("userId") Integer userId);
 
     // 장소 태그 점수 재집계용 집계
     // - count(distinct user_id): 한 사람은 한 표(반복 방문 흡수)
@@ -37,5 +40,5 @@ public interface VisitTagRepository extends JpaRepository<VisitTag, VisitTagId> 
             "from VisitTag vt, VisitRecord v " +
             "where v.visitId = vt.visitId and v.placeId = :placeId " +
             "group by vt.tagId")
-    List<TagScoreProjection> aggregateByPlaceId(@Param("placeId") Integer placeId);
+    List<TagScoreProjection> findTagScoresByPlaceId(@Param("placeId") Integer placeId);
 }
