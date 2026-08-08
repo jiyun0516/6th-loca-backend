@@ -63,7 +63,7 @@ public class ReviewService {
         VisitRecord saved = visitRecordRepository.save(record);
 
         List<Integer> tagIds = saveTags(saved.getVisitId(), request.tagIds());
-        refreshPreferences(saved.getPlaceId());
+        refreshPreferences(userId, saved.getPlaceId());
 
         return ReviewResponse.from(saved, tagIds);
     }
@@ -134,7 +134,7 @@ public class ReviewService {
         } else {
             visitTagRepository.deleteByVisitId(visitId);
             tagIds = saveTags(visitId, request.tagIds());
-            refreshPreferences(record.getPlaceId());
+            refreshPreferences(userId, record.getPlaceId());
         }
 
         return ReviewResponse.from(record, tagIds);
@@ -148,7 +148,7 @@ public class ReviewService {
 
         visitTagRepository.deleteByVisitId(visitId);
         visitRecordRepository.delete(record);
-        refreshPreferences(placeId);
+        refreshPreferences(userId, placeId);
     }
 
     // 리뷰 소유 단건 조회
@@ -200,8 +200,11 @@ public class ReviewService {
     // 선호도 갱신 (생성/수정/삭제 공통 지점)
     // - user_preferences: 즉시 재집계 (flush는 updater 내부에서 수행)
     // - place_preferences: dirty 표시만. 실제 재집계는 추천 조회 시
-    private void refreshPreferences(Integer placeId) {
-        userPreferenceUpdater.refresh(placeId);
+    private void refreshPreferences(
+            Integer userId,
+            Integer placeId
+    ) {
+        userPreferenceUpdater.refresh(userId);
         placePreferenceUpdater.markDirty(placeId);
     }
 
