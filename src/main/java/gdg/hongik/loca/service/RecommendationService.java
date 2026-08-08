@@ -11,10 +11,22 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gdg.hongik.loca.dto.recommendation.ForYouStatusResponse;
+import gdg.hongik.loca.repository.VisitRecordRepository;
+
+import gdg.hongik.loca.entity.PlacePreference;
+import gdg.hongik.loca.entity.UserPreference;
+import gdg.hongik.loca.entity.VisitRecord;
+import gdg.hongik.loca.exception.ForYouLockedException;
+import gdg.hongik.loca.repository.UserPreferenceRepository;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.Comparator;
+import java.util.Set;
+import java.math.BigDecimal;
 
 // 추천 도메인 서비스 계층
 // - Explore: 선택 태그 조합으로 미방문 장소 탐색
@@ -26,19 +38,28 @@ public class RecommendationService {
     private final PlacePreferenceRepository placePreferenceRepository;
     private final PublicPlaceRepository placeRepository;
     private final PlacePreferenceUpdater placePreferenceUpdater;
-
-    // 임시 userId, JWT 도입 시 토큰에서 추출로 교체
-    private static final Integer TEMP_USER_ID = 1;
+    private final VisitRecordRepository visitRecordRepository;
+    private final UserPreferenceRepository userPreferenceRepository;
+    private final ForYouScoreCalculator forYouScoreCalculator;
 
     // Explore 상위 개수
     private static final int EXPLORE_LIMIT = 20;
+
+    // ForYou 해금 조건 리뷰 개수
+    private static final int FOR_YOU_REQUIRED_REVIEW_COUNT = 3;
+
+    // ForYou 추천 장소 최대 반환 개수
+    private static final int FOR_YOU_LIMIT = 5;
 
     // Explore 추천
     // - tagIds 중 하나라도 가진 장소 후보(ANY)
     // - 소프트 삭제 장소, 사용자가 이미 방문한 장소 제외
     // - 선택 태그 점수 합계 내림차순 상위 20개
     // - tagIds 빈 값이면 InvalidRecommendationRequestException(400)
-    public List<RecommendationResponse> explore(List<Integer> tagIds) {
+    public List<RecommendationResponse> explore(
+            Integer userId,
+            List<Integer> tagIds
+    ) {
         if (tagIds == null || tagIds.isEmpty()) {
             throw new InvalidRecommendationRequestException();
         }
@@ -47,7 +68,7 @@ public class RecommendationService {
         placePreferenceUpdater.refreshDirty();
 
         List<PlaceScoreProjection> scores = placePreferenceRepository.findExploreScores(
-                tagIds, TEMP_USER_ID, PageRequest.of(0, EXPLORE_LIMIT));
+                tagIds, userId, PageRequest.of(0, EXPLORE_LIMIT));
 
         // N+1 회피: placeId 배치 로드 후 Map 구성
         List<Integer> placeIds = scores.stream()
@@ -59,6 +80,81 @@ public class RecommendationService {
         // 프로젝션 순서(점수 내림차순) 유지하며 매핑
         return scores.stream()
                 .map(s -> RecommendationResponse.of(placeMap.get(s.getPlaceId()), s.getScore()))
+                .toList();
+    }
+
+    // ForYou 추천
+    // - 현재 리뷰가 3개 이상인 사용자만 이용 가능
+    // - 사용자와 장소의 태그 선호도 정규화 후 매칭 점수 계산
+    // - 소프트 삭제 장소, 사용자가 이미 방문한 장소 제외
+    // - 매칭 점수 내림차순 상위 5개
+
+    // 현재 리뷰 개수를 기준으로 ForYou 잠금/해금 상태 조회
+    public ForYouStatusResponse getForYouStatus(Integer userId) {
+        long reviewCount = visitRecordRepository.countByUserId(userId);
+
+        return ForYouStatusResponse.of(
+                reviewCount,
+                FOR_YOU_REQUIRED_REVIEW_COUNT
+        );
+    }
+
+    // 현재 사용자 취향을 기준으로 미방문 장소 상위 5개 추천
+    public List<RecommendationResponse> forYou(Integer userId) {
+        long reviewCount = visitRecordRepository.countByUserId(userId);
+
+        if (reviewCount < FOR_YOU_REQUIRED_REVIEW_COUNT) {
+            throw new ForYouLockedException();
+        }
+
+        // 리뷰 변경으로 dirty 처리된 장소 선호도 최신화
+        placePreferenceUpdater.refreshDirty();
+
+        List<UserPreference> userPreferences =
+                userPreferenceRepository.findByUserId(userId);
+
+        List<PlacePreference> placePreferences =
+                placePreferenceRepository.findAll();
+
+        Map<Integer, BigDecimal> scoresByPlace =
+                forYouScoreCalculator.calculate(
+                        userPreferences,
+                        placePreferences
+                );
+
+        Set<Integer> visitedPlaceIds =
+                visitRecordRepository
+                        .findByUserIdOrderByVisitedAtDesc(userId)
+                        .stream()
+                        .map(VisitRecord::getPlaceId)
+                        .collect(Collectors.toSet());
+
+        Map<Integer, PublicPlace> activePlaceMap =
+                placeRepository.findAllByDeletedAtIsNull()
+                        .stream()
+                        .collect(Collectors.toMap(
+                                PublicPlace::getPlaceId,
+                                Function.identity()
+                        ));
+
+        return scoresByPlace.entrySet()
+                .stream()
+                .filter(entry ->
+                        activePlaceMap.containsKey(entry.getKey()))
+                .filter(entry ->
+                        !visitedPlaceIds.contains(entry.getKey()))
+                .sorted(
+                        Map.Entry
+                                .<Integer, BigDecimal>comparingByValue(
+                                        Comparator.reverseOrder()
+                                )
+                                .thenComparing(Map.Entry::getKey)
+                )
+                .limit(FOR_YOU_LIMIT)
+                .map(entry -> RecommendationResponse.of(
+                        activePlaceMap.get(entry.getKey()),
+                        entry.getValue()
+                ))
                 .toList();
     }
 }

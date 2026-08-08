@@ -18,4 +18,7 @@ public interface VisitRecordRepository extends JpaRepository<VisitRecord, Long> 
 
     // 장소 방문 수
     long countByPlaceId(Integer placeId);
+
+    // 사용자 리뷰 개수
+    long countByUserId(Integer userId);
 }
