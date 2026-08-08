@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import gdg.hongik.loca.dto.recommendation.ForYouStatusResponse;
 
 import java.util.List;
 
@@ -29,5 +30,13 @@ public class RecommendationController {
             @RequestParam List<Integer> tagIds
     ) {
         return recommendationService.explore(userId, tagIds);
+    }
+
+    // GET /api/recommendations/for-you/status
+    @GetMapping("/for-you/status")
+    public ForYouStatusResponse getForYouStatus(
+            @AuthenticationPrincipal Integer userId
+    ) {
+        return recommendationService.getForYouStatus(userId);
     }
 }

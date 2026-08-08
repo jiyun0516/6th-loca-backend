@@ -11,6 +11,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gdg.hongik.loca.dto.recommendation.ForYouStatusResponse;
+import gdg.hongik.loca.repository.VisitRecordRepository;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -26,10 +29,13 @@ public class RecommendationService {
     private final PlacePreferenceRepository placePreferenceRepository;
     private final PublicPlaceRepository placeRepository;
     private final PlacePreferenceUpdater placePreferenceUpdater;
-
+    private final VisitRecordRepository visitRecordRepository;
 
     // Explore 상위 개수
     private static final int EXPLORE_LIMIT = 20;
+
+    // ForYou 해금 조건 리뷰 개수
+    private static final int FOR_YOU_REQUIRED_REVIEW_COUNT = 3;
 
     // Explore 추천
     // - tagIds 중 하나라도 가진 장소 후보(ANY)
@@ -61,5 +67,15 @@ public class RecommendationService {
         return scores.stream()
                 .map(s -> RecommendationResponse.of(placeMap.get(s.getPlaceId()), s.getScore()))
                 .toList();
+    }
+
+    // 현재 리뷰 개수를 기준으로 ForYou 잠금/해금 상태 조회
+    public ForYouStatusResponse getForYouStatus(Integer userId) {
+        long reviewCount = visitRecordRepository.countByUserId(userId);
+
+        return ForYouStatusResponse.of(
+                reviewCount,
+                FOR_YOU_REQUIRED_REVIEW_COUNT
+        );
     }
 }
