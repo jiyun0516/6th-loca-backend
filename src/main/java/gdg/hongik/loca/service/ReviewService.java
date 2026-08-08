@@ -38,21 +38,20 @@ public class ReviewService {
     private final UserPreferenceUpdater userPreferenceUpdater;
     private final PlacePreferenceUpdater placePreferenceUpdater;
 
-    // 임시 userId, JWT 도입 시 토큰에서 추출로 교체
-    private static final Integer TEMP_USER_ID = 1;
+
 
     // 방문 후기 생성
     // - 순서 : 장소 검증 -> 리뷰 저장 -> 리뷰 태그 저장 -> 선호도 갱신
     // - visitedAt 미수신 시 기록 시각으로 대체
     @Transactional
-    public ReviewResponse create(ReviewCreateRequest request) {
+    public ReviewResponse create(Integer userId, ReviewCreateRequest request) {
         // 장소가 존재하지 않거나 삭제된 장소일 시 PlaceNotFoundException 발생
         if (!publicPlaceRepository.existsByPlaceIdAndDeletedAtIsNull(request.placeId())) {
             throw new PlaceNotFoundException(request.placeId());
         }
 
         VisitRecord record = VisitRecord.builder()
-                .userId(TEMP_USER_ID)
+                .userId(userId)
                 .placeId(request.placeId())
                 .title(request.title())
                 .content(request.content())
@@ -64,15 +63,15 @@ public class ReviewService {
         VisitRecord saved = visitRecordRepository.save(record);
 
         List<Integer> tagIds = saveTags(saved.getVisitId(), request.tagIds());
-        refreshPreferences(saved.getPlaceId());
+        refreshPreferences(userId, saved.getPlaceId());
 
         return ReviewResponse.from(saved, tagIds);
     }
 
     // 내 방문 후기 목록
     // - visitedAt 내림차순
-    public List<ReviewResponse> list() {
-        List<VisitRecord> records = visitRecordRepository.findByUserIdOrderByVisitedAtDesc(TEMP_USER_ID);
+    public List<ReviewResponse> list(Integer userId) {
+        List<VisitRecord> records = visitRecordRepository.findByUserIdOrderByVisitedAtDesc(userId);
         if (records.isEmpty()) {
             return List.of();
         }
@@ -93,8 +92,8 @@ public class ReviewService {
 
     // 내 방문 후기 상세
     // - 키워드/태그/이미지 포함
-    public ReviewResponse detail(Long visitId) {
-        VisitRecord record = findOwned(visitId);
+    public ReviewResponse detail(Integer userId, Long visitId) {
+        VisitRecord record = findOwned(visitId, userId);
         return ReviewResponse.from(record, findTagIds(visitId));
     }
 
@@ -103,8 +102,8 @@ public class ReviewService {
     // - 컬렉션은 null이면 유지, []이면 전체 삭제
     // - 컬렉션은 참조를 바꾸지 않고 내용만 교체
     @Transactional
-    public ReviewResponse update(Long visitId, ReviewUpdateRequest request) {
-        VisitRecord record = findOwned(visitId);
+    public ReviewResponse update(Integer userId, Long visitId, ReviewUpdateRequest request) {
+        VisitRecord record = findOwned(visitId, userId);
 
         // 필드별 업데이트
         if (request.title() != null) {
@@ -135,7 +134,7 @@ public class ReviewService {
         } else {
             visitTagRepository.deleteByVisitId(visitId);
             tagIds = saveTags(visitId, request.tagIds());
-            refreshPreferences(record.getPlaceId());
+            refreshPreferences(userId, record.getPlaceId());
         }
 
         return ReviewResponse.from(record, tagIds);
@@ -143,19 +142,20 @@ public class ReviewService {
 
     // 내 방문 후기 삭제(소프트 삭제)
     @Transactional
-    public void delete(Long visitId) {
-        VisitRecord record = findOwned(visitId);
+    public void delete(Integer userId, Long visitId) {
+        VisitRecord record = findOwned(visitId, userId);
         Integer placeId = record.getPlaceId();
 
         visitTagRepository.deleteByVisitId(visitId);
         visitRecordRepository.delete(record);
-        refreshPreferences(placeId);
+        refreshPreferences(userId, placeId);
     }
 
     // 리뷰 소유 단건 조회
     // - visitId가 존재하지 않거나 소유자가 불일치할 시 VisitRecordNotFoundException 발생
-    private VisitRecord findOwned(Long visitId) {
-        return visitRecordRepository.findByVisitIdAndUserId(visitId, TEMP_USER_ID)
+    private VisitRecord findOwned(Long visitId, Integer userId) {
+        return visitRecordRepository
+                .findByVisitIdAndUserId(visitId, userId)
                 .orElseThrow(() -> new VisitRecordNotFoundException(visitId));
     }
 
@@ -200,8 +200,11 @@ public class ReviewService {
     // 선호도 갱신 (생성/수정/삭제 공통 지점)
     // - user_preferences: 즉시 재집계 (flush는 updater 내부에서 수행)
     // - place_preferences: dirty 표시만. 실제 재집계는 추천 조회 시
-    private void refreshPreferences(Integer placeId) {
-        userPreferenceUpdater.refresh(TEMP_USER_ID);
+    private void refreshPreferences(
+            Integer userId,
+            Integer placeId
+    ) {
+        userPreferenceUpdater.refresh(userId);
         placePreferenceUpdater.markDirty(placeId);
     }
 
