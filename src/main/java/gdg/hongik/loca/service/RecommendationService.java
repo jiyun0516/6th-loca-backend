@@ -27,8 +27,6 @@ public class RecommendationService {
     private final PublicPlaceRepository placeRepository;
     private final PlacePreferenceUpdater placePreferenceUpdater;
 
-    // 임시 userId, JWT 도입 시 토큰에서 추출로 교체
-    private static final Integer TEMP_USER_ID = 1;
 
     // Explore 상위 개수
     private static final int EXPLORE_LIMIT = 20;
@@ -38,7 +36,10 @@ public class RecommendationService {
     // - 소프트 삭제 장소, 사용자가 이미 방문한 장소 제외
     // - 선택 태그 점수 합계 내림차순 상위 20개
     // - tagIds 빈 값이면 InvalidRecommendationRequestException(400)
-    public List<RecommendationResponse> explore(List<Integer> tagIds) {
+    public List<RecommendationResponse> explore(
+            Integer userId,
+            List<Integer> tagIds
+    ) {
         if (tagIds == null || tagIds.isEmpty()) {
             throw new InvalidRecommendationRequestException();
         }
@@ -47,7 +48,7 @@ public class RecommendationService {
         placePreferenceUpdater.refreshDirty();
 
         List<PlaceScoreProjection> scores = placePreferenceRepository.findExploreScores(
-                tagIds, TEMP_USER_ID, PageRequest.of(0, EXPLORE_LIMIT));
+                tagIds, userId, PageRequest.of(0, EXPLORE_LIMIT));
 
         // N+1 회피: placeId 배치 로드 후 Map 구성
         List<Integer> placeIds = scores.stream()
