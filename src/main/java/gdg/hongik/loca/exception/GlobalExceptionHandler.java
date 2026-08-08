@@ -72,6 +72,15 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(e.getMessage()));
     }
 
+    // ForYou 잠금 상태 - 403
+    @ExceptionHandler(ForYouLockedException.class)
+    public ResponseEntity<ErrorResponse> handleForYouLocked(
+            ForYouLockedException e
+    ) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
     // 요청 예외 처리
 
     // 요청 본문 파싱(JSON -> DTO) 실패 - 400
