@@ -20,7 +20,6 @@ import gdg.hongik.loca.entity.VisitRecord;
 import gdg.hongik.loca.exception.ForYouLockedException;
 import gdg.hongik.loca.repository.UserPreferenceRepository;
 import gdg.hongik.loca.dto.recommendation.ForYouRecommendationResponse;
-import gdg.hongik.loca.repository.TagRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -43,8 +42,6 @@ public class RecommendationService {
     private final VisitRecordRepository visitRecordRepository;
     private final UserPreferenceRepository userPreferenceRepository;
     private final ForYouScoreCalculator forYouScoreCalculator;
-    private final TagRepository tagRepository;
-    private final ForYouReasonGenerator forYouReasonGenerator;
 
     // Explore 상위 개수
     private static final int EXPLORE_LIMIT = 20;
@@ -141,18 +138,18 @@ public class RecommendationService {
                                 Function.identity()
                         ));
 
-        Map<Integer, List<PlacePreference>> placePreferencesByPlace =
-                placePreferences.stream()
-                        .collect(Collectors.groupingBy(
-                                PlacePreference::getPlaceId
-                        ));
+        Set<Integer> userTagIds =
+                userPreferences.stream()
+                        .map(UserPreference::getTagId)
+                        .collect(Collectors.toSet());
 
-        Map<Integer, String> tagNamesById =
-                tagRepository.findAll()
-                        .stream()
-                        .collect(Collectors.toMap(
-                                tag -> tag.getTagId(),
-                                tag -> tag.getName()
+        Map<Integer, Long> matchedTagCountsByPlace =
+                placePreferences.stream()
+                        .filter(preference ->
+                                userTagIds.contains(preference.getTagId()))
+                        .collect(Collectors.groupingBy(
+                                PlacePreference::getPlaceId,
+                                Collectors.counting()
                         ));
 
         return scoresByPlace.entrySet()
@@ -161,59 +158,44 @@ public class RecommendationService {
                         activePlaceMap.containsKey(entry.getKey()))
                 .filter(entry ->
                         !visitedPlaceIds.contains(entry.getKey()))
-                // 정렬 전에 장소별 추천 근거 계산
-                .map(entry -> {
-                    Integer placeId = entry.getKey();
+                .sorted((left, right) -> {
+                    int scoreComparison =
+                            right.getValue().compareTo(left.getValue());
 
-                    ForYouReasonGenerator.Result reason =
-                            forYouReasonGenerator.generate(
-                                    userPreferences,
-                                    placePreferencesByPlace.getOrDefault(
-                                            placeId,
-                                            List.of()
-                                    ),
-                                    tagNamesById
+                    if (scoreComparison != 0) {
+                        return scoreComparison;
+                    }
+
+                    long leftTagCount =
+                            matchedTagCountsByPlace.getOrDefault(
+                                    left.getKey(),
+                                    0L
                             );
 
-                    return new ForYouCandidate(
-                            placeId,
-                            entry.getValue(),
-                            reason
+                    long rightTagCount =
+                            matchedTagCountsByPlace.getOrDefault(
+                                    right.getKey(),
+                                    0L
+                            );
+
+                    int tagCountComparison =
+                            Long.compare(rightTagCount, leftTagCount);
+
+                    if (tagCountComparison != 0) {
+                        return tagCountComparison;
+                    }
+
+                    return Integer.compare(
+                            left.getKey(),
+                            right.getKey()
                     );
                 })
-                .sorted(
-                        Comparator
-                                // 1. 추천 점수 내림차순
-                                .comparing(
-                                        ForYouCandidate::matchScore,
-                                        Comparator.reverseOrder()
-                                )
-                                // 2. 공통 추천 근거 태그 수 내림차순
-                                .thenComparing(
-                                        candidate ->
-                                                candidate.reason()
-                                                        .matchedTags()
-                                                        .size(),
-                                        Comparator.reverseOrder()
-                                )
-                                // 3. 결과 순서 고정을 위한 placeId 오름차순
-                                .thenComparing(ForYouCandidate::placeId)
-                )
                 .limit(FOR_YOU_LIMIT)
-                .map(candidate ->
-                        ForYouRecommendationResponse.of(
-                                activePlaceMap.get(candidate.placeId()),
-                                candidate.reason().recommendationReason()
+                .map(entry ->
+                        ForYouRecommendationResponse.from(
+                                activePlaceMap.get(entry.getKey())
                         ))
                 .toList();
-    }
-
-    // ForYou 정렬에 사용하는 내부 후보 정보
-    private record ForYouCandidate(
-            Integer placeId,
-            BigDecimal matchScore,
-            ForYouReasonGenerator.Result reason
-    ) {
     }
 }
 
