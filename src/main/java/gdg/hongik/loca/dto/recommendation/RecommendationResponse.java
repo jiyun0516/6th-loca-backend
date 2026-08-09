@@ -11,20 +11,17 @@ public record RecommendationResponse(
         String kakaoPlaceId,
         String address,
         BigDecimal lat,
-        BigDecimal lng,
-        BigDecimal matchScore
+        BigDecimal lng
 ) {
-
     // PublicPlace + 매칭 점수 -> 응답 DTO
-    public static RecommendationResponse of(PublicPlace place, BigDecimal matchScore) {
+    public static RecommendationResponse of(PublicPlace place) {
         return new RecommendationResponse(
                 place.getPlaceId(),
                 place.getName(),
                 place.getKakaoPlaceId(),
                 place.getAddress(),
                 place.getLat(),
-                place.getLng(),
-                matchScore
+                place.getLng()
         );
     }
 }

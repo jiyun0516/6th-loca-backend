@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.Comparator;
 import java.util.Set;
 import java.math.BigDecimal;
 
@@ -80,7 +79,9 @@ public class RecommendationService {
 
         // 프로젝션 순서(점수 내림차순) 유지하며 매핑
         return scores.stream()
-                .map(s -> RecommendationResponse.of(placeMap.get(s.getPlaceId()), s.getScore()))
+                .map(s -> RecommendationResponse.of(
+                        placeMap.get(s.getPlaceId())
+                ))
                 .toList();
     }
 
