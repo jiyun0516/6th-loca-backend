@@ -1,24 +1,26 @@
 package gdg.hongik.loca.dto.recommendation;
 
 import gdg.hongik.loca.entity.PublicPlace;
+import java.math.BigDecimal;
 
 // ForYou 추천 장소 응답 DTO
 public record ForYouRecommendationResponse(
         Integer placeId,
         String name,
         String address,
-        String recommendationReason
+        BigDecimal lat,
+        BigDecimal lng
 ) {
 
-    public static ForYouRecommendationResponse of(
-            PublicPlace place,
-            String recommendationReason
+    public static ForYouRecommendationResponse from(
+            PublicPlace place
     ) {
         return new ForYouRecommendationResponse(
                 place.getPlaceId(),
                 place.getName(),
                 place.getAddress(),
-                recommendationReason
+                place.getLat(),
+                place.getLng()
         );
     }
 }
