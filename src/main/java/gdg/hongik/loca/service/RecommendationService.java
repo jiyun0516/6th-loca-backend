@@ -161,14 +161,7 @@ public class RecommendationService {
                         activePlaceMap.containsKey(entry.getKey()))
                 .filter(entry ->
                         !visitedPlaceIds.contains(entry.getKey()))
-                .sorted(
-                        Map.Entry
-                                .<Integer, BigDecimal>comparingByValue(
-                                        Comparator.reverseOrder()
-                                )
-                                .thenComparing(Map.Entry::getKey)
-                )
-                .limit(FOR_YOU_LIMIT)
+                // 정렬 전에 장소별 추천 근거 계산
                 .map(entry -> {
                     Integer placeId = entry.getKey();
 
@@ -182,11 +175,45 @@ public class RecommendationService {
                                     tagNamesById
                             );
 
-                    return ForYouRecommendationResponse.of(
-                            activePlaceMap.get(placeId),
-                            reason.recommendationReason()
+                    return new ForYouCandidate(
+                            placeId,
+                            entry.getValue(),
+                            reason
                     );
                 })
+                .sorted(
+                        Comparator
+                                // 1. 추천 점수 내림차순
+                                .comparing(
+                                        ForYouCandidate::matchScore,
+                                        Comparator.reverseOrder()
+                                )
+                                // 2. 공통 추천 근거 태그 수 내림차순
+                                .thenComparing(
+                                        candidate ->
+                                                candidate.reason()
+                                                        .matchedTags()
+                                                        .size(),
+                                        Comparator.reverseOrder()
+                                )
+                                // 3. 결과 순서 고정을 위한 placeId 오름차순
+                                .thenComparing(ForYouCandidate::placeId)
+                )
+                .limit(FOR_YOU_LIMIT)
+                .map(candidate ->
+                        ForYouRecommendationResponse.of(
+                                activePlaceMap.get(candidate.placeId()),
+                                candidate.reason().recommendationReason()
+                        ))
                 .toList();
     }
+
+    // ForYou 정렬에 사용하는 내부 후보 정보
+    private record ForYouCandidate(
+            Integer placeId,
+            BigDecimal matchScore,
+            ForYouReasonGenerator.Result reason
+    ) {
+    }
 }
+
