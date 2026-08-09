@@ -81,17 +81,11 @@ public class ForYouReasonGenerator {
             return "최근 기록을 반영한 추천이에요.";
         }
 
-        if (matchedTags.size() == 1) {
-            return "최근 기록과 비슷한 취향의 장소로 추천해요.";
-        }
+        String preferences = String.join(" · ", matchedTags);
 
-        String preferences = matchedTags.stream()
-                .map(tagName -> "'" + tagName + "'")
-                .collect(Collectors.joining(", "));
-
-        return "최근 기록의 "
+        return "'"
                 + preferences
-                + " 취향을 반영한 추천이에요.";
+                + "' 취향을 반영한 추천이에요.";
     }
 
     public record Result(
