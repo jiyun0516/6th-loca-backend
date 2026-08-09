@@ -19,6 +19,8 @@ import gdg.hongik.loca.entity.UserPreference;
 import gdg.hongik.loca.entity.VisitRecord;
 import gdg.hongik.loca.exception.ForYouLockedException;
 import gdg.hongik.loca.repository.UserPreferenceRepository;
+import gdg.hongik.loca.dto.recommendation.ForYouRecommendationResponse;
+import gdg.hongik.loca.repository.TagRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,8 @@ public class RecommendationService {
     private final VisitRecordRepository visitRecordRepository;
     private final UserPreferenceRepository userPreferenceRepository;
     private final ForYouScoreCalculator forYouScoreCalculator;
+    private final TagRepository tagRepository;
+    private final ForYouReasonGenerator forYouReasonGenerator;
 
     // Explore 상위 개수
     private static final int EXPLORE_LIMIT = 20;
@@ -100,7 +104,7 @@ public class RecommendationService {
     }
 
     // 현재 사용자 취향을 기준으로 미방문 장소 상위 5개 추천
-    public List<RecommendationResponse> forYou(Integer userId) {
+    public List<ForYouRecommendationResponse> forYou(Integer userId) {
         long reviewCount = visitRecordRepository.countByUserId(userId);
 
         if (reviewCount < FOR_YOU_REQUIRED_REVIEW_COUNT) {
@@ -137,6 +141,20 @@ public class RecommendationService {
                                 Function.identity()
                         ));
 
+        Map<Integer, List<PlacePreference>> placePreferencesByPlace =
+                placePreferences.stream()
+                        .collect(Collectors.groupingBy(
+                                PlacePreference::getPlaceId
+                        ));
+
+        Map<Integer, String> tagNamesById =
+                tagRepository.findAll()
+                        .stream()
+                        .collect(Collectors.toMap(
+                                tag -> tag.getTagId(),
+                                tag -> tag.getName()
+                        ));
+
         return scoresByPlace.entrySet()
                 .stream()
                 .filter(entry ->
@@ -151,10 +169,24 @@ public class RecommendationService {
                                 .thenComparing(Map.Entry::getKey)
                 )
                 .limit(FOR_YOU_LIMIT)
-                .map(entry -> RecommendationResponse.of(
-                        activePlaceMap.get(entry.getKey()),
-                        entry.getValue()
-                ))
+                .map(entry -> {
+                    Integer placeId = entry.getKey();
+
+                    ForYouReasonGenerator.Result reason =
+                            forYouReasonGenerator.generate(
+                                    userPreferences,
+                                    placePreferencesByPlace.getOrDefault(
+                                            placeId,
+                                            List.of()
+                                    ),
+                                    tagNamesById
+                            );
+
+                    return ForYouRecommendationResponse.of(
+                            activePlaceMap.get(placeId),
+                            reason.recommendationReason()
+                    );
+                })
                 .toList();
     }
 }
