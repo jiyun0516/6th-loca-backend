@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 /**
  * 장소 응답 DTO.
  */
-public record PlaceResponse(
+public record PublicPlaceResponse(
         Integer placeId,
         String name,
         String kakaoPlaceId,
@@ -18,8 +18,8 @@ public record PlaceResponse(
         OffsetDateTime createdAt
 ) {
 
-    public static PlaceResponse from(PublicPlace place) {
-        return new PlaceResponse(
+    public static PublicPlaceResponse from(PublicPlace place) {
+        return new PublicPlaceResponse(
                 place.getPlaceId(),
                 place.getName(),
                 place.getKakaoPlaceId(),

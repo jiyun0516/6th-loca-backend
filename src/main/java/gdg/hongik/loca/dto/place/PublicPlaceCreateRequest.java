@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 /**
  * 장소 생성 요청 DTO.
  */
-public record PlaceCreateRequest(
+public record PublicPlaceCreateRequest(
 
         @NotBlank(message = "장소 이름은 필수입니다.")
         String name,

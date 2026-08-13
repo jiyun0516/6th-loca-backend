@@ -1,9 +1,9 @@
 package gdg.hongik.loca.service;
 
-import gdg.hongik.loca.dto.place.PlaceCreateRequest;
-import gdg.hongik.loca.dto.place.PlaceDetailResponse;
-import gdg.hongik.loca.dto.place.PlaceResponse;
-import gdg.hongik.loca.dto.place.PlaceUpdateRequest;
+import gdg.hongik.loca.dto.place.PublicPlaceCreateRequest;
+import gdg.hongik.loca.dto.place.PublicPlaceDetailResponse;
+import gdg.hongik.loca.dto.place.PublicPlaceResponse;
+import gdg.hongik.loca.dto.place.PublicPlaceUpdateRequest;
 import gdg.hongik.loca.dto.tag.TagResponse;
 import gdg.hongik.loca.entity.PublicPlace;
 import gdg.hongik.loca.exception.DuplicateKakaoPlaceIdException;
@@ -35,7 +35,7 @@ public class PublicPlaceService {
     // 활성 장소와 kakaoPlaceId가 겹칠 경우 DuplicateKakaoPlaceIdException 발생
     // 삭제된 장소와 kakaoPlaceId가 겹칠 경우 해당 장소 복구
     @Transactional
-    public PlaceResponse create(PlaceCreateRequest request) {
+    public PublicPlaceResponse create(PublicPlaceCreateRequest request) {
         PublicPlace existing = placeRepository.findByKakaoPlaceId(request.kakaoPlaceId())
                 .orElse(null);
 
@@ -52,7 +52,7 @@ public class PublicPlaceService {
             existing.setAddress(request.address());
             existing.setLat(request.lat());
             existing.setLng(request.lng());
-            return PlaceResponse.from(existing);
+            return PublicPlaceResponse.from(existing);
         }
 
         PublicPlace place = PublicPlace.builder()
@@ -63,29 +63,29 @@ public class PublicPlaceService {
                 .lng(request.lng())
                 .build();
 
-        return PlaceResponse.from(placeRepository.save(place));
+        return PublicPlaceResponse.from(placeRepository.save(place));
     }
 
     // 장소 단건 조회 (태그, 방문 횟수 포함)
     // 없으면 PlaceNotFoundException 발생
-    public PlaceDetailResponse getPlace(Integer placeId) {
+    public PublicPlaceDetailResponse getPlace(Integer placeId) {
         PublicPlace place = findById(placeId);
         List<TagResponse> tags = getPlaceTags(placeId);
         long visitCount = visitRecordRepository.countByPlaceId(placeId);
-        return PlaceDetailResponse.of(place, tags, visitCount);
+        return PublicPlaceDetailResponse.of(place, tags, visitCount);
     }
 
     // 활성 장소 목록 조회
-    public List<PlaceResponse> getPlaces() {
+    public List<PublicPlaceResponse> getPlaces() {
         return placeRepository.findAllByDeletedAtIsNull().stream()
-                .map(PlaceResponse::from)
+                .map(PublicPlaceResponse::from)
                 .toList();
     }
 
     // 장소 수정
     // dirty checking으로 반영 (save 미사용)
     @Transactional
-    public PlaceResponse updatePlace(Integer placeId, PlaceUpdateRequest request) {
+    public PublicPlaceResponse updatePlace(Integer placeId, PublicPlaceUpdateRequest request) {
         PublicPlace place = findById(placeId);
 
         place.setName(request.name());
@@ -93,7 +93,7 @@ public class PublicPlaceService {
         place.setLat(request.lat());
         place.setLng(request.lng());
 
-        return PlaceResponse.from(place);
+        return PublicPlaceResponse.from(place);
     }
 
     // 장소 소프트 삭제

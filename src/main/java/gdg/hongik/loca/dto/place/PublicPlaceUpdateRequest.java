@@ -11,7 +11,7 @@ import java.math.BigDecimal;
  * 장소 수정 요청 DTO.
  * kakaoPlaceId는 외부 식별자이므로 수정 대상에서 제외한다.
  */
-public record PlaceUpdateRequest(
+public record PublicPlaceUpdateRequest(
 
         @NotBlank(message = "장소 이름은 필수입니다.")
         String name,

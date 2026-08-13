@@ -1,8 +1,8 @@
 package gdg.hongik.loca.controller;
 
-import gdg.hongik.loca.dto.place.PlaceCreateRequest;
-import gdg.hongik.loca.dto.place.PlaceResponse;
-import gdg.hongik.loca.dto.place.PlaceUpdateRequest;
+import gdg.hongik.loca.dto.place.PublicPlaceCreateRequest;
+import gdg.hongik.loca.dto.place.PublicPlaceResponse;
+import gdg.hongik.loca.dto.place.PublicPlaceUpdateRequest;
 import gdg.hongik.loca.service.PublicPlaceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +30,8 @@ public class AdminPublicPlaceController {
     // - 삭제된 장소와 kakaoPlaceId 중복이면 복구
     // - 성공 시 201
     @PostMapping
-    public ResponseEntity<PlaceResponse> create(@Valid @RequestBody PlaceCreateRequest request) {
-        PlaceResponse response = placeService.create(request);
+    public ResponseEntity<PublicPlaceResponse> create(@Valid @RequestBody PublicPlaceCreateRequest request) {
+        PublicPlaceResponse response = placeService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -39,9 +39,9 @@ public class AdminPublicPlaceController {
     // - 전체 필드 교체
     // - 없으면 404
     @PutMapping("/{placeId}")
-    public PlaceResponse update(
+    public PublicPlaceResponse update(
             @PathVariable Integer placeId,
-            @Valid @RequestBody PlaceUpdateRequest request
+            @Valid @RequestBody PublicPlaceUpdateRequest request
     ) {
         return placeService.updatePlace(placeId, request);
     }

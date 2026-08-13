@@ -1,7 +1,7 @@
 package gdg.hongik.loca.controller;
 
-import gdg.hongik.loca.dto.place.PlaceDetailResponse;
-import gdg.hongik.loca.dto.place.PlaceResponse;
+import gdg.hongik.loca.dto.place.PublicPlaceDetailResponse;
+import gdg.hongik.loca.dto.place.PublicPlaceResponse;
 import gdg.hongik.loca.service.PublicPlaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,13 +21,13 @@ public class PublicPlaceController {
 
     // 장소 목록 조회
     @GetMapping
-    public List<PlaceResponse> getPlaces() {
+    public List<PublicPlaceResponse> getPlaces() {
         return placeService.getPlaces();
     }
 
     // 장소 상세 조회 (태그, 방문 횟수 포함)
     @GetMapping("/{placeId}")
-    public PlaceDetailResponse getPlace(@PathVariable Integer placeId) {
+    public PublicPlaceDetailResponse getPlace(@PathVariable Integer placeId) {
         return placeService.getPlace(placeId);
     }
 }
