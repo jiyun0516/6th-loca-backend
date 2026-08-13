@@ -1,0 +1,12 @@
+package gdg.hongik.loca.dto.placelist;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+// 장소 목록 생성 요청 DTO
+public record PlaceListCreateRequest(
+        @NotBlank(message = "목록 이름은 필수입니다.")
+        @Size(max = 50, message = "목록 이름은 50자 이하여야 합니다.")
+        String name
+) {
+}

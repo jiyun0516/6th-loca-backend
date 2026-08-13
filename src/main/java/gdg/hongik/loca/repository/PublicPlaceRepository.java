@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,9 @@ public interface PublicPlaceRepository extends JpaRepository<PublicPlace, Intege
     Optional<PublicPlace> findByPlaceIdAndDeletedAtIsNull(Integer placeId);
 
     boolean existsByPlaceIdAndDeletedAtIsNull(Integer placeId);
+
+    // 목록 조립용 일괄 조회
+    List<PublicPlace> findByPlaceIdInAndDeletedAtIsNull(Collection<Integer> placeIds);
 
     // 재집계 대상 표시
     @Modifying

@@ -31,6 +31,29 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(e.getMessage()));
     }
 
+    // 장소 목록 예외 처리
+
+    // 목록 미존재 / 타인 소유 - 404
+    @ExceptionHandler(PlaceListNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePlaceListNotFound(PlaceListNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
+    // 목록 항목 미존재 - 404
+    @ExceptionHandler(PlaceListItemNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePlaceListItemNotFound(PlaceListItemNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
+    // 이미 담긴 장소 - 409
+    @ExceptionHandler(DuplicateListItemException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateListItem(DuplicateListItemException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
     // 태그 예외 처리
 
     // 태그 미존재 - 404

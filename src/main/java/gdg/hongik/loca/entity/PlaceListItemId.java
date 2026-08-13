@@ -9,7 +9,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class FavoriteId implements Serializable {
-    private Integer userId;
+public class PlaceListItemId implements Serializable {
+    private Long listId;
     private Integer placeId;
 }
