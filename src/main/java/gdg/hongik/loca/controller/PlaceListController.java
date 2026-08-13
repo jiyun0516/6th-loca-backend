@@ -5,6 +5,7 @@ import gdg.hongik.loca.dto.placelist.PlaceListDetailResponse;
 import gdg.hongik.loca.dto.placelist.PlaceListItemCreateRequest;
 import gdg.hongik.loca.dto.placelist.PlaceListResponse;
 import gdg.hongik.loca.dto.placelist.PlaceListUpdateRequest;
+import gdg.hongik.loca.dto.placelist.ShareResponse;
 import gdg.hongik.loca.service.PlaceListService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -82,6 +83,21 @@ public class PlaceListController {
                                            @PathVariable Long listId,
                                            @PathVariable Integer placeId) {
         placeListService.removeItem(userId, listId, placeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // 공유 시작 (이미 공유 중이면 기존 토큰 반환)
+    @PostMapping("/{listId}/share")
+    public ShareResponse share(@AuthenticationPrincipal Integer userId,
+                               @PathVariable Long listId) {
+        return placeListService.share(userId, listId);
+    }
+
+    // 공유 철회 (재공유 시 새 토큰)
+    @DeleteMapping("/{listId}/share")
+    public ResponseEntity<Void> unshare(@AuthenticationPrincipal Integer userId,
+                                        @PathVariable Long listId) {
+        placeListService.unshare(userId, listId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -50,6 +50,7 @@ public class SecurityConfig {
                                 HttpMethod.GET,
                                 "/api/places/public",
                                 "/api/places/public/**",
+                                "/api/shared/**",
                                 "/api/places/*/reviews"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
