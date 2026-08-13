@@ -33,6 +33,7 @@ public class CustomPlaceService {
                 .address(request.address())
                 .lat(request.lat())
                 .lng(request.lng())
+                .isShareable(request.isShareable())
                 .build();
 
         return CustomPlaceResponse.from(customPlaceRepository.save(place));
@@ -65,6 +66,7 @@ public class CustomPlaceService {
         place.setAddress(request.address());
         place.setLat(request.lat());
         place.setLng(request.lng());
+        place.setIsShareable(request.isShareable());
 
         return CustomPlaceResponse.from(place);
     }

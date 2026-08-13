@@ -34,6 +34,11 @@ public class CustomPlace extends Place {
     @Column(name = "lng", nullable = false)
     private BigDecimal lng;
 
+    // 타인 노출 허용 여부. 등록자 본인 경로에는 영향 없음
+    // DB 기본값은 false(fail-closed). 요청 DTO에서 필수 필드로 받으므로 기본값에 의존하지 말 것
+    @Column(name = "is_shareable", nullable = false)
+    private Boolean isShareable;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
