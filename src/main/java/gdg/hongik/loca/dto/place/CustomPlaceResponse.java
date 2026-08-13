@@ -13,6 +13,7 @@ public record CustomPlaceResponse(
         String address,
         BigDecimal lat,
         BigDecimal lng,
+        Boolean isShareable,
         OffsetDateTime createdAt
 ) {
     public static CustomPlaceResponse from(CustomPlace place) {
@@ -23,6 +24,7 @@ public record CustomPlaceResponse(
                 place.getAddress(),
                 place.getLat(),
                 place.getLng(),
+                place.getIsShareable(),
                 place.getCreatedAt()
         );
     }

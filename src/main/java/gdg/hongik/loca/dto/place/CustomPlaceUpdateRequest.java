@@ -22,6 +22,10 @@ public record CustomPlaceUpdateRequest(
         @NotNull(message = "경도(lng)는 필수입니다.")
         @DecimalMin(value = "-180.0", message = "경도는 -180 이상이어야 합니다.")
         @DecimalMax(value = "180.0", message = "경도는 180 이하여야 합니다.")
-        BigDecimal lng
+        BigDecimal lng,
+
+        // 서버 기본값을 두지 않음. 값이 없으면 사용자가 공개 여부를 고른 적이 없다는 뜻
+        @NotNull(message = "공개 여부(isShareable)는 필수입니다.")
+        Boolean isShareable
 ) {
 }
