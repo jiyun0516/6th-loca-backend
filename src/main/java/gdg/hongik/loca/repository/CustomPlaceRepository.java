@@ -25,4 +25,9 @@ public interface CustomPlaceRepository extends JpaRepository<CustomPlace, Intege
             "and (c.userId = :userId or c.isShareable = true)")
     List<CustomPlace> findOwnedOrShareableByPlaceIdIn(@Param("placeIds") Collection<Integer> placeIds,
                                                       @Param("userId") Integer userId);
+
+    // 공개 허용된 장소만. **소유자 개념이 없는 공유 링크 조회 전용**
+    @Query("select c from CustomPlace c " +
+            "where c.placeId in :placeIds and c.deletedAt is null and c.isShareable = true")
+    List<CustomPlace> findShareableByPlaceIdIn(@Param("placeIds") Collection<Integer> placeIds);
 }

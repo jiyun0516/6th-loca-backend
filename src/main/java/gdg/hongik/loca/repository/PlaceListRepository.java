@@ -13,4 +13,7 @@ public interface PlaceListRepository extends JpaRepository<PlaceList, Long> {
 
     // 소유권 확인 + 단건 조회. 타인 소유는 빈 값이 되어 404 로 이어짐
     Optional<PlaceList> findByListIdAndUserId(Long listId, Integer userId);
+
+    // 공유 링크 조회. shareToken is null = 공유 안 함 이므로 이 조회로 철회 여부까지 함께 걸러짐
+    Optional<PlaceList> findByShareToken(String shareToken);
 }
