@@ -8,15 +8,15 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-// 개인 장소
+// 사용자 생성 장소
 @Entity
-@Table(name = "private_places")
-@DiscriminatorValue("PRIVATE")
+@Table(name = "custom_places")
+@DiscriminatorValue("CUSTOM")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder
-public class PrivatePlace extends Place {
+public class CustomPlace extends Place {
 
     // 소유 사용자 (FK users.user_id)
     @Column(name = "user_id", nullable = false)

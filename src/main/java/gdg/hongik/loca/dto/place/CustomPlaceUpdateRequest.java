@@ -7,8 +7,8 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
-// 개인 장소 수정 요청 DTO
-public record PrivatePlaceUpdateRequest(
+// 사용자 생성 장소 수정 요청 DTO
+public record CustomPlaceUpdateRequest(
         @NotBlank(message = "장소 이름은 필수입니다.")
         String name,
 
