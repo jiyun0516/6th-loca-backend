@@ -26,17 +26,25 @@ public class JwtTokenProvider {
         this.accessTokenExpirationMs = accessTokenExpirationMs;
     }
 
-    public String createAccessToken(Integer userId, String email) {
+    public String createAccessToken(Integer userId, String email, boolean isAdmin) {
         Date issuedAt = new Date();
         Date expiration = new Date(issuedAt.getTime() + accessTokenExpirationMs);
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("email", email)
+                .claim("isAdmin", isAdmin)
                 .issuedAt(issuedAt)
                 .expiration(expiration)
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public boolean getIsAdmin(String token) {
+        Boolean isAdmin =
+                parseClaims(token).get("isAdmin", Boolean.class);
+
+        return Boolean.TRUE.equals(isAdmin);
     }
 
     public boolean validateToken(String token) {

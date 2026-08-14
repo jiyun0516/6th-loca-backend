@@ -29,6 +29,10 @@ public class User {
     @Column(name = "nickname")
     private String nickname;
 
+    @Column(name = "is_admin", nullable = false)
+    @Builder.Default
+    private boolean admin = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
