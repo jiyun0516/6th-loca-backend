@@ -19,12 +19,12 @@ import gdg.hongik.loca.entity.UserPreference;
 import gdg.hongik.loca.entity.VisitRecord;
 import gdg.hongik.loca.exception.ForYouLockedException;
 import gdg.hongik.loca.repository.UserPreferenceRepository;
+import gdg.hongik.loca.dto.recommendation.ForYouRecommendationResponse;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.Comparator;
 import java.util.Set;
 import java.math.BigDecimal;
 
@@ -79,7 +79,9 @@ public class RecommendationService {
 
         // 프로젝션 순서(점수 내림차순) 유지하며 매핑
         return scores.stream()
-                .map(s -> RecommendationResponse.of(placeMap.get(s.getPlaceId()), s.getScore()))
+                .map(s -> RecommendationResponse.of(
+                        placeMap.get(s.getPlaceId())
+                ))
                 .toList();
     }
 
@@ -100,7 +102,7 @@ public class RecommendationService {
     }
 
     // 현재 사용자 취향을 기준으로 미방문 장소 상위 5개 추천
-    public List<RecommendationResponse> forYou(Integer userId) {
+    public List<ForYouRecommendationResponse> forYou(Integer userId) {
         long reviewCount = visitRecordRepository.countByUserId(userId);
 
         if (reviewCount < FOR_YOU_REQUIRED_REVIEW_COUNT) {
@@ -137,24 +139,64 @@ public class RecommendationService {
                                 Function.identity()
                         ));
 
+        Set<Integer> userTagIds =
+                userPreferences.stream()
+                        .map(UserPreference::getTagId)
+                        .collect(Collectors.toSet());
+
+        Map<Integer, Long> matchedTagCountsByPlace =
+                placePreferences.stream()
+                        .filter(preference ->
+                                userTagIds.contains(preference.getTagId()))
+                        .collect(Collectors.groupingBy(
+                                PlacePreference::getPlaceId,
+                                Collectors.counting()
+                        ));
+
         return scoresByPlace.entrySet()
                 .stream()
                 .filter(entry ->
                         activePlaceMap.containsKey(entry.getKey()))
                 .filter(entry ->
                         !visitedPlaceIds.contains(entry.getKey()))
-                .sorted(
-                        Map.Entry
-                                .<Integer, BigDecimal>comparingByValue(
-                                        Comparator.reverseOrder()
-                                )
-                                .thenComparing(Map.Entry::getKey)
-                )
+                .sorted((left, right) -> {
+                    int scoreComparison =
+                            right.getValue().compareTo(left.getValue());
+
+                    if (scoreComparison != 0) {
+                        return scoreComparison;
+                    }
+
+                    long leftTagCount =
+                            matchedTagCountsByPlace.getOrDefault(
+                                    left.getKey(),
+                                    0L
+                            );
+
+                    long rightTagCount =
+                            matchedTagCountsByPlace.getOrDefault(
+                                    right.getKey(),
+                                    0L
+                            );
+
+                    int tagCountComparison =
+                            Long.compare(rightTagCount, leftTagCount);
+
+                    if (tagCountComparison != 0) {
+                        return tagCountComparison;
+                    }
+
+                    return Integer.compare(
+                            left.getKey(),
+                            right.getKey()
+                    );
+                })
                 .limit(FOR_YOU_LIMIT)
-                .map(entry -> RecommendationResponse.of(
-                        activePlaceMap.get(entry.getKey()),
-                        entry.getValue()
-                ))
+                .map(entry ->
+                        ForYouRecommendationResponse.from(
+                                activePlaceMap.get(entry.getKey())
+                        ))
                 .toList();
     }
 }
+

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import gdg.hongik.loca.dto.recommendation.ForYouStatusResponse;
+import gdg.hongik.loca.dto.recommendation.ForYouRecommendationResponse;
 
 import java.util.List;
 
@@ -46,7 +47,7 @@ public class RecommendationController {
     // - 사용자와 장소의 태그 선호도를 기반으로 미방문 장소 추천
     // - 리뷰 3개 미만이면 403, 해금 상태이면 점수 내림차순 상위 5개 반환
     @GetMapping("/for-you")
-    public List<RecommendationResponse> forYou(
+    public List<ForYouRecommendationResponse> forYou(
             @AuthenticationPrincipal Integer userId
     ) {
         return recommendationService.forYou(userId);
