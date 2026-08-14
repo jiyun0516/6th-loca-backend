@@ -31,6 +31,7 @@ public class AuthService {
         User user = User.builder()
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
+                .admin(false)
                 .build();
 
         return userRepository.save(user).getUserId();
@@ -45,8 +46,8 @@ public class AuthService {
         }
 
         String accessToken =
-                jwtTokenProvider.createAccessToken(user.getUserId(), user.getEmail());
+                jwtTokenProvider.createAccessToken(user.getUserId(), user.getEmail(), user.isAdmin());
 
-        return new LoginResponse(accessToken, "Bearer");
+        return new LoginResponse(accessToken, "Bearer", user.isAdmin());
     }
 }

@@ -20,7 +20,6 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final AdminEmailWhitelist adminEmailWhitelist;
 
     @Override
     protected void doFilterInternal(
@@ -36,10 +35,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (jwtTokenProvider.validateToken(token)) {
                 Integer userId = jwtTokenProvider.getUserId(token);
-                String email = jwtTokenProvider.getEmail(token);
+                boolean isAdmin = jwtTokenProvider.getIsAdmin(token);
 
                 List<SimpleGrantedAuthority> authorities =
-                        adminEmailWhitelist.contains(email)
+                        isAdmin
                                 ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
                                 : List.of();
 
