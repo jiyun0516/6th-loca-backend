@@ -17,8 +17,7 @@ public class CorsConfig {
                 new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
-                "https://loca-hongik.vercel.app",
-                "http://localhost:5173"
+                "https://loca-hongik.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(
