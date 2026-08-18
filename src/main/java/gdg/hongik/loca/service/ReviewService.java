@@ -3,12 +3,14 @@ package gdg.hongik.loca.service;
 import gdg.hongik.loca.dto.review.ReviewCreateRequest;
 import gdg.hongik.loca.dto.review.ReviewResponse;
 import gdg.hongik.loca.dto.review.ReviewUpdateRequest;
+import gdg.hongik.loca.entity.PublicPlace;
 import gdg.hongik.loca.entity.Tag;
 import gdg.hongik.loca.entity.VisitRecord;
 import gdg.hongik.loca.entity.VisitTag;
 import gdg.hongik.loca.exception.PlaceNotFoundException;
 import gdg.hongik.loca.exception.TagNotFoundException;
 import gdg.hongik.loca.exception.VisitRecordNotFoundException;
+import gdg.hongik.loca.repository.CustomPlaceRepository;
 import gdg.hongik.loca.repository.PublicPlaceRepository;
 import gdg.hongik.loca.repository.TagRepository;
 import gdg.hongik.loca.repository.VisitRecordRepository;
@@ -35,8 +37,13 @@ public class ReviewService {
     private final VisitTagRepository visitTagRepository;
     private final TagRepository tagRepository;
     private final PublicPlaceRepository publicPlaceRepository;
+    private final CustomPlaceRepository customPlaceRepository;
     private final UserPreferenceUpdater userPreferenceUpdater;
     private final PlacePreferenceUpdater placePreferenceUpdater;
+
+    // 장소 타입 표기 (dto/placelist/PlaceListItemResponse 와 같은 문자열)
+    private static final String PLACE_TYPE_PUBLIC = "PUBLIC";
+    private static final String PLACE_TYPE_CUSTOM = "CUSTOM";
 
 
 
@@ -45,8 +52,14 @@ public class ReviewService {
     // - visitedAt 미수신 시 기록 시각으로 대체
     @Transactional
     public ReviewResponse create(Integer userId, ReviewCreateRequest request) {
-        // 장소가 존재하지 않거나 삭제된 장소일 시 PlaceNotFoundException 발생
-        if (!publicPlaceRepository.existsByPlaceIdAndDeletedAtIsNull(request.placeId())) {
+        // 장소 검증
+        // - public : 활성 행이면 누구나 허용
+        // - custom : 소유한 활성 행만 허용. 담기(place_list_items)와 달리 is_shareable 타인 장소는 불허
+        //   (리뷰는 visit_tags 를 만들어 user_preferences 로 집계되므로 검증되지 않은 타인 좌표에 붙으면 안 됨)
+        // - 둘 다 아니면 PlaceNotFoundException 발생
+        boolean isPublicPlace = publicPlaceRepository.existsByPlaceIdAndDeletedAtIsNull(request.placeId());
+        if (!isPublicPlace
+                && !customPlaceRepository.existsByPlaceIdAndUserIdAndDeletedAtIsNull(request.placeId(), userId)) {
             throw new PlaceNotFoundException(request.placeId());
         }
 
@@ -65,7 +78,7 @@ public class ReviewService {
         List<Integer> tagIds = saveTags(saved.getVisitId(), request.tagIds());
         refreshPreferences(userId, saved.getPlaceId());
 
-        return ReviewResponse.from(saved, tagIds);
+        return ReviewResponse.from(saved, tagIds, isPublicPlace ? PLACE_TYPE_PUBLIC : PLACE_TYPE_CUSTOM);
     }
 
     // 내 방문 후기 목록
@@ -85,8 +98,20 @@ public class ReviewService {
                         VisitTag::getVisitId,
                         Collectors.mapping(VisitTag::getTagId, Collectors.toList())));
 
+        // 장소 타입 일괄 판정
+        List<Integer> placeIds = records.stream()
+                .map(VisitRecord::getPlaceId)
+                .distinct()
+                .toList();
+        Set<Integer> publicPlaceIds = publicPlaceRepository.findAllById(placeIds).stream()
+                .map(PublicPlace::getPlaceId)
+                .collect(Collectors.toSet());
+
         return records.stream()
-                .map(r -> ReviewResponse.from(r, tagIdsByVisitId.getOrDefault(r.getVisitId(), List.of())))
+                .map(r -> ReviewResponse.from(
+                        r,
+                        tagIdsByVisitId.getOrDefault(r.getVisitId(), List.of()),
+                        publicPlaceIds.contains(r.getPlaceId()) ? PLACE_TYPE_PUBLIC : PLACE_TYPE_CUSTOM))
                 .toList();
     }
 
@@ -94,7 +119,7 @@ public class ReviewService {
     // - 키워드/태그/이미지 포함
     public ReviewResponse detail(Integer userId, Long visitId) {
         VisitRecord record = findOwned(visitId, userId);
-        return ReviewResponse.from(record, findTagIds(visitId));
+        return ReviewResponse.from(record, findTagIds(visitId), placeTypeOf(record.getPlaceId()));
     }
 
     // 내 방문 후기 수정
@@ -137,7 +162,7 @@ public class ReviewService {
             refreshPreferences(userId, record.getPlaceId());
         }
 
-        return ReviewResponse.from(record, tagIds);
+        return ReviewResponse.from(record, tagIds, placeTypeOf(record.getPlaceId()));
     }
 
     // 내 방문 후기 삭제(소프트 삭제)
@@ -188,6 +213,12 @@ public class ReviewService {
                 .toList();
         visitTagRepository.saveAll(rows);
         return distinctIds;
+    }
+
+    // 장소 타입 판정
+    // - public_places 에 행이 있으면 PUBLIC, 없으면 CUSTOM
+    private String placeTypeOf(Integer placeId) {
+        return publicPlaceRepository.existsById(placeId) ? PLACE_TYPE_PUBLIC : PLACE_TYPE_CUSTOM;
     }
 
     // 방문 기록의 태그 ID 목록 조회
