@@ -13,7 +13,8 @@ public record RecommendationResponse(
         BigDecimal lat,
         BigDecimal lng
 ) {
-    // PublicPlace + 매칭 점수 -> 응답 DTO
+    // PublicPlace -> 응답 DTO
+    // - 점수는 내보내지 않음 (정렬에만 쓰고 화면에 노출하지 않음)
     public static RecommendationResponse of(PublicPlace place) {
         return new RecommendationResponse(
                 place.getPlaceId(),

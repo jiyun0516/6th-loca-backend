@@ -1,5 +1,6 @@
 package gdg.hongik.loca.controller;
 
+import gdg.hongik.loca.dto.common.SliceResponse;
 import gdg.hongik.loca.dto.recommendation.RecommendationResponse;
 import gdg.hongik.loca.service.RecommendationService;
 import lombok.RequiredArgsConstructor;
@@ -22,15 +23,17 @@ public class RecommendationController {
 
     private final RecommendationService recommendationService;
 
-    // GET /api/recommendations/explore?tagIds=1,2,3
-    // - 선택 태그 ANY, 미방문, 점수합 내림차순 상위 20개
+    // GET /api/recommendations/explore?tagIds=1,2,3&page=0
+    // - 선택 태그 ANY, 미방문, 점수합 내림차순 (동점은 placeId 오름차순)
     // - tagIds 누락 시 Spring 기본 400, 빈 값이면 서비스에서 400
+    // - size 는 서버 고정. 클라이언트는 page 만 넘김 (미전달 시 0)
     @GetMapping("/explore")
-    public List<RecommendationResponse> explore(
+    public SliceResponse<RecommendationResponse> explore(
             @AuthenticationPrincipal Integer userId,
-            @RequestParam List<Integer> tagIds
+            @RequestParam List<Integer> tagIds,
+            @RequestParam(defaultValue = "0") int page
     ) {
-        return recommendationService.explore(userId, tagIds);
+        return recommendationService.explore(userId, tagIds, page);
     }
 
     // GET /api/recommendations/for-you/status
