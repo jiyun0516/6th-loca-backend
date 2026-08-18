@@ -1,5 +1,7 @@
 package gdg.hongik.loca.service;
 
+import gdg.hongik.loca.dto.common.SliceResponse;
+import gdg.hongik.loca.dto.review.PlaceReviewResponse;
 import gdg.hongik.loca.dto.review.ReviewCreateRequest;
 import gdg.hongik.loca.dto.review.ReviewResponse;
 import gdg.hongik.loca.dto.review.ReviewUpdateRequest;
@@ -16,6 +18,9 @@ import gdg.hongik.loca.repository.TagRepository;
 import gdg.hongik.loca.repository.VisitRecordRepository;
 import gdg.hongik.loca.repository.VisitTagRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,9 +46,17 @@ public class ReviewService {
     private final UserPreferenceUpdater userPreferenceUpdater;
     private final PlacePreferenceUpdater placePreferenceUpdater;
 
-    // 장소 타입 표기 (dto/placelist/PlaceListItemResponse 와 같은 문자열)
+    // 장소 타입 표기
     private static final String PLACE_TYPE_PUBLIC = "PUBLIC";
     private static final String PLACE_TYPE_CUSTOM = "CUSTOM";
+
+    // 장소별 리뷰 페이지 크기
+    private static final int PLACE_REVIEW_PAGE_SIZE = 20;
+
+    // 장소별 리뷰 정렬
+    // - visitedAt 단독은 동점이 남음. 페이지 경계에서 중복/누락이 생기므로 visitId 로 확정 정렬
+    private static final Sort PLACE_REVIEW_SORT = Sort.by(Sort.Direction.DESC, "visitedAt")
+            .and(Sort.by(Sort.Direction.DESC, "visitId"));
 
 
 
@@ -89,14 +102,7 @@ public class ReviewService {
             return List.of();
         }
 
-        List<Long> visitIds = records.stream()
-                .map(VisitRecord::getVisitId)
-                .toList();
-
-        Map<Long, List<Integer>> tagIdsByVisitId = visitTagRepository.findByVisitIdIn(visitIds).stream()
-                .collect(Collectors.groupingBy(
-                        VisitTag::getVisitId,
-                        Collectors.mapping(VisitTag::getTagId, Collectors.toList())));
+        Map<Long, List<Integer>> tagIdsByVisitId = findTagIdsByVisitId(records);
 
         // 장소 타입 일괄 판정
         List<Integer> placeIds = records.stream()
@@ -113,6 +119,28 @@ public class ReviewService {
                         tagIdsByVisitId.getOrDefault(r.getVisitId(), List.of()),
                         publicPlaceIds.contains(r.getPlaceId()) ? PLACE_TYPE_PUBLIC : PLACE_TYPE_CUSTOM))
                 .toList();
+    }
+
+    // 장소별 리뷰 목록
+    // - 불충족은 전부 PlaceNotFoundException. 미존재/삭제됨/타인 custom 을 구분하지 않음 (403 은 존재를 흘림)
+    public SliceResponse<PlaceReviewResponse> listByPlace(Integer userId, Integer placeId, int page) {
+        boolean visible = publicPlaceRepository.existsByPlaceIdAndDeletedAtIsNull(placeId)
+                || (userId != null
+                && customPlaceRepository.existsByPlaceIdAndUserIdAndDeletedAtIsNull(placeId, userId));
+        if (!visible) {
+            throw new PlaceNotFoundException(placeId);
+        }
+
+        // 음수 page는 500 에러 발생으로 인해 0으로 전환
+        PageRequest pageRequest = PageRequest.of(
+                Math.max(page, 0), PLACE_REVIEW_PAGE_SIZE, PLACE_REVIEW_SORT);
+
+        Slice<VisitRecord> slice = visitRecordRepository.findByPlaceId(placeId, pageRequest);
+        Map<Long, List<Integer>> tagIdsByVisitId = findTagIdsByVisitId(slice.getContent());
+
+        return SliceResponse.from(slice.map(record -> PlaceReviewResponse.from(
+                record,
+                tagIdsByVisitId.getOrDefault(record.getVisitId(), List.of()))));
     }
 
     // 내 방문 후기 상세
@@ -219,6 +247,24 @@ public class ReviewService {
     // - public_places 에 행이 있으면 PUBLIC, 없으면 CUSTOM
     private String placeTypeOf(Integer placeId) {
         return publicPlaceRepository.existsById(placeId) ? PLACE_TYPE_PUBLIC : PLACE_TYPE_CUSTOM;
+    }
+
+    // 방문 기록 목록의 태그 ID 일괄 조회
+    // - 기록마다 조회하면 N+1 이므로 visitId 를 모아 한 번에 가져옴
+    // - 빈 목록이면 in () 쿼리를 만들지 않도록 즉시 반환
+    private Map<Long, List<Integer>> findTagIdsByVisitId(List<VisitRecord> records) {
+        if (records.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> visitIds = records.stream()
+                .map(VisitRecord::getVisitId)
+                .toList();
+
+        return visitTagRepository.findByVisitIdIn(visitIds).stream()
+                .collect(Collectors.groupingBy(
+                        VisitTag::getVisitId,
+                        Collectors.mapping(VisitTag::getTagId, Collectors.toList())));
     }
 
     // 방문 기록의 태그 ID 목록 조회
