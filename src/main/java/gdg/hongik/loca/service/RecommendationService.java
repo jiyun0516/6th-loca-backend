@@ -1,5 +1,6 @@
 package gdg.hongik.loca.service;
 
+import gdg.hongik.loca.dto.common.SliceResponse;
 import gdg.hongik.loca.dto.recommendation.PlaceScoreProjection;
 import gdg.hongik.loca.dto.recommendation.RecommendationResponse;
 import gdg.hongik.loca.entity.PublicPlace;
@@ -8,6 +9,7 @@ import gdg.hongik.loca.repository.PlacePreferenceRepository;
 import gdg.hongik.loca.repository.PublicPlaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,8 +44,9 @@ public class RecommendationService {
     private final UserPreferenceRepository userPreferenceRepository;
     private final ForYouScoreCalculator forYouScoreCalculator;
 
-    // Explore 상위 개수
-    private static final int EXPLORE_LIMIT = 20;
+    // Explore 페이지 크기
+    // - 클라이언트가 지정하지 않음. 장소별 리뷰 조회와 같은 방침 (URL 은 page 하나로 끝남)
+    private static final int EXPLORE_PAGE_SIZE = 20;
 
     // ForYou 해금 조건 리뷰 개수
     private static final int FOR_YOU_REQUIRED_REVIEW_COUNT = 3;
@@ -54,35 +57,43 @@ public class RecommendationService {
     // Explore 추천
     // - tagIds 중 하나라도 가진 장소 후보(ANY)
     // - 소프트 삭제 장소, 사용자가 이미 방문한 장소 제외
-    // - 선택 태그 점수 합계 내림차순 상위 20개
+    // - 선택 태그 점수 합계 내림차순, 동점은 placeId 오름차순
     // - tagIds 빈 값이면 InvalidRecommendationRequestException(400)
-    public List<RecommendationResponse> explore(
+    //   (태그 미선택 진입은 필터 없는 전체 장소 목록이 되어 GET /api/places/public 과 겹치므로 열지 않음)
+    // - 정렬/크기는 서버가 정함. 클라이언트는 page 만 넘김
+    public SliceResponse<RecommendationResponse> explore(
             Integer userId,
-            List<Integer> tagIds
+            List<Integer> tagIds,
+            int page
     ) {
         if (tagIds == null || tagIds.isEmpty()) {
             throw new InvalidRecommendationRequestException();
         }
 
-        // 조회 전 dirty 장소 점수 재집계 (place_preferences 갱신 시점)
-        placePreferenceUpdater.refreshDirty();
+        // dirty 장소 점수 재집계는 **첫 페이지에서만** 실행
+        // - 재집계가 점수를 바꾸므로 스크롤 도중 실행되면 순위가 흔들려 중복/누락이 생김
+        // - 스크롤 중에는 같은 스냅샷을 보고, 반영은 사용자가 탐색을 새로 시작할 때 이뤄짐
+        if (page <= 0) {
+            placePreferenceUpdater.refreshDirty();
+        }
 
-        List<PlaceScoreProjection> scores = placePreferenceRepository.findExploreScores(
-                tagIds, userId, PageRequest.of(0, EXPLORE_LIMIT));
+        // 음수 page 는 PageRequest 가 예외를 던져 500 이 되므로 0 으로 내림
+        // 정렬은 @Query 의 order by 가 담당하므로 Sort 를 싣지 않음
+        PageRequest pageRequest = PageRequest.of(Math.max(page, 0), EXPLORE_PAGE_SIZE);
+
+        Slice<PlaceScoreProjection> scores = placePreferenceRepository.findExploreScores(
+                tagIds, userId, pageRequest);
 
         // N+1 회피: placeId 배치 로드 후 Map 구성
-        List<Integer> placeIds = scores.stream()
+        List<Integer> placeIds = scores.getContent().stream()
                 .map(PlaceScoreProjection::getPlaceId)
                 .toList();
         Map<Integer, PublicPlace> placeMap = placeRepository.findAllById(placeIds).stream()
                 .collect(Collectors.toMap(PublicPlace::getPlaceId, Function.identity()));
 
-        // 프로젝션 순서(점수 내림차순) 유지하며 매핑
-        return scores.stream()
-                .map(s -> RecommendationResponse.of(
-                        placeMap.get(s.getPlaceId())
-                ))
-                .toList();
+        // Slice.map 으로 변환해 hasNext 등 슬라이스 메타를 보존 (프로젝션 순서 유지)
+        return SliceResponse.from(scores.map(s -> RecommendationResponse.of(
+                placeMap.get(s.getPlaceId()))));
     }
 
     // ForYou 추천
