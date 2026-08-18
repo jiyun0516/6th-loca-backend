@@ -1,6 +1,8 @@
 package gdg.hongik.loca.repository;
 
 import gdg.hongik.loca.entity.VisitRecord;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -15,6 +17,9 @@ public interface VisitRecordRepository extends JpaRepository<VisitRecord, Long> 
     // 소유 단건 조회
     // - 미존재/소유자 불일치 시 empty
     Optional<VisitRecord> findByVisitIdAndUserId(Long visitId, Integer userId);
+
+    // 장소별 리뷰 슬라이스 조회
+    Slice<VisitRecord> findByPlaceId(Integer placeId, Pageable pageable);
 
     // 장소 방문 수
     long countByPlaceId(Integer placeId);
