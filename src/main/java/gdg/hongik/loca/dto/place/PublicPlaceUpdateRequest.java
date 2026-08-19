@@ -26,6 +26,8 @@ public record PublicPlaceUpdateRequest(
         @NotNull(message = "경도(lng)는 필수입니다.")
         @DecimalMin(value = "-180.0", message = "경도는 -180 이상이어야 합니다.")
         @DecimalMax(value = "180.0", message = "경도는 180 이하여야 합니다.")
-        BigDecimal lng
+        BigDecimal lng,
+
+        String imageUrl
 ) {
 }

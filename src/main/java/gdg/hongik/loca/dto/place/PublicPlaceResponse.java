@@ -15,6 +15,7 @@ public record PublicPlaceResponse(
         String address,
         BigDecimal lat,
         BigDecimal lng,
+        String imageUrl,
         OffsetDateTime createdAt
 ) {
 
@@ -26,6 +27,7 @@ public record PublicPlaceResponse(
                 place.getAddress(),
                 place.getLat(),
                 place.getLng(),
+                place.getImageUrl(),
                 place.getCreatedAt()
         );
     }

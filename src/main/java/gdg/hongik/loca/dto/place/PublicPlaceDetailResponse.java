@@ -16,6 +16,7 @@ public record PublicPlaceDetailResponse(
         String address,
         BigDecimal lat,
         BigDecimal lng,
+        String imageUrl,
         List<TagResponse> tags,
         long visitCount,
         OffsetDateTime createdAt
@@ -37,6 +38,7 @@ public record PublicPlaceDetailResponse(
                 place.getAddress(),
                 place.getLat(),
                 place.getLng(),
+                place.getImageUrl(),
                 tags,
                 visitCount,
                 place.getCreatedAt()

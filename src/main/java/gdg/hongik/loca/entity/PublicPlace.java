@@ -40,6 +40,9 @@ public class PublicPlace extends Place {
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Column(name = "preference_dirty_at")
     private OffsetDateTime preferenceDirtyAt;
 }
