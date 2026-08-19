@@ -52,6 +52,11 @@ public class PublicPlaceService {
             existing.setAddress(request.address());
             existing.setLat(request.lat());
             existing.setLng(request.lng());
+
+            if (request.imageUrl() != null) {
+                existing.setImageUrl(request.imageUrl());
+            }
+
             return PublicPlaceResponse.from(existing);
         }
 
@@ -61,6 +66,7 @@ public class PublicPlaceService {
                 .address(request.address())
                 .lat(request.lat())
                 .lng(request.lng())
+                .imageUrl(request.imageUrl())
                 .build();
 
         return PublicPlaceResponse.from(placeRepository.save(place));
@@ -92,6 +98,10 @@ public class PublicPlaceService {
         place.setAddress(request.address());
         place.setLat(request.lat());
         place.setLng(request.lng());
+
+        if (request.imageUrl() != null) {
+            place.setImageUrl(request.imageUrl());
+        }
 
         return PublicPlaceResponse.from(place);
     }
