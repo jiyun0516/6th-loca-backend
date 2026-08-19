@@ -120,4 +120,33 @@ public class ImageStorageService {
                 + "/"
                 + objectPath;
     }
+
+    public void deleteByUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return;
+        }
+
+        String publicUrlPrefix = buildPublicUrl("");
+
+        // 우리 Storage 파일이 아닌 외부 URL은 삭제하지 않음
+        if (!imageUrl.startsWith(publicUrlPrefix)) {
+            return;
+        }
+
+        String objectPath = imageUrl.substring(publicUrlPrefix.length());
+
+        try {
+            supabaseStorageRestClient.delete()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/storage/v1/object/")
+                            .path(bucket)
+                            .path("/")
+                            .path(objectPath)
+                            .build())
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            throw new ImageUploadException("이미지 파일 삭제에 실패했습니다.");
+        }
+    }
 }

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.time.OffsetDateTime;
 
 // 공용 장소 도메인 서비스 계층
 @Service
@@ -27,6 +28,7 @@ public class PublicPlaceService {
     private final PublicPlaceRepository placeRepository;
     private final PlacePreferenceRepository placePreferenceRepository;
     private final VisitRecordRepository visitRecordRepository;
+    private final ImageStorageService imageStorageService;
 
     // 장소 상세에 노출할 대표 태그 개수
     private static final int PLACE_TAG_LIMIT = 5;
@@ -53,8 +55,13 @@ public class PublicPlaceService {
             existing.setLat(request.lat());
             existing.setLng(request.lng());
 
-            if (request.imageUrl() != null) {
+            if (request.imageUrl() != null
+                    && !request.imageUrl().equals(existing.getImageUrl())) {
+
+                String oldImageUrl = existing.getImageUrl();
                 existing.setImageUrl(request.imageUrl());
+
+                imageStorageService.deleteByUrl(oldImageUrl);
             }
 
             return PublicPlaceResponse.from(existing);
@@ -99,8 +106,13 @@ public class PublicPlaceService {
         place.setLat(request.lat());
         place.setLng(request.lng());
 
-        if (request.imageUrl() != null) {
+        if (request.imageUrl() != null
+                && !request.imageUrl().equals(place.getImageUrl())) {
+
+            String oldImageUrl = place.getImageUrl();
             place.setImageUrl(request.imageUrl());
+
+            imageStorageService.deleteByUrl(oldImageUrl);
         }
 
         return PublicPlaceResponse.from(place);
@@ -110,7 +122,12 @@ public class PublicPlaceService {
     @Transactional
     public void deletePlace(Integer placeId) {
         PublicPlace place = findById(placeId);
-        place.setDeletedAt(java.time.OffsetDateTime.now());
+        String oldImageUrl = place.getImageUrl();
+
+        place.setImageUrl(null);
+        place.setDeletedAt(OffsetDateTime.now());
+
+        imageStorageService.deleteByUrl(oldImageUrl);
     }
 
     // 장소 대표 태그 조회

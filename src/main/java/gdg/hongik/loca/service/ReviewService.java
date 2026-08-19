@@ -45,6 +45,7 @@ public class ReviewService {
     private final CustomPlaceRepository customPlaceRepository;
     private final UserPreferenceUpdater userPreferenceUpdater;
     private final PlacePreferenceUpdater placePreferenceUpdater;
+    private final ImageStorageService imageStorageService;
 
     // 장소 타입 표기
     private static final String PLACE_TYPE_PUBLIC = "PUBLIC";
@@ -176,8 +177,14 @@ public class ReviewService {
             record.getKeywords().addAll(request.keywords());
         }
         if (request.imageUrls() != null) {
+            List<String> removedImageUrls = record.getImageUrls().stream()
+                    .filter(url -> !request.imageUrls().contains(url))
+                    .toList();
+
             record.getImageUrls().clear();
             record.getImageUrls().addAll(request.imageUrls());
+
+            removedImageUrls.forEach(imageStorageService::deleteByUrl);
         }
 
         // 태그가 그대로면 선호도 값이 변할 수 없으므로 재집계를 건너뜀
@@ -193,15 +200,18 @@ public class ReviewService {
         return ReviewResponse.from(record, tagIds, placeTypeOf(record.getPlaceId()));
     }
 
-    // 내 방문 후기 삭제(소프트 삭제)
+    // 내 방문 후기 삭제
     @Transactional
     public void delete(Integer userId, Long visitId) {
         VisitRecord record = findOwned(visitId, userId);
         Integer placeId = record.getPlaceId();
+        List<String> imageUrls = List.copyOf(record.getImageUrls());
 
         visitTagRepository.deleteByVisitId(visitId);
         visitRecordRepository.delete(record);
         refreshPreferences(userId, placeId);
+
+        imageUrls.forEach(imageStorageService::deleteByUrl);
     }
 
     // 리뷰 소유 단건 조회
