@@ -168,4 +168,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse(e.getMessage()));
     }
+
+    // 이미지 예외 처리
+
+    // 이미지 파일 검증 또는 업로드 실패 - 400
+    @ExceptionHandler(ImageUploadException.class)
+    public ResponseEntity<ErrorResponse> handleImageUpload(
+            ImageUploadException e
+    ) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(e.getMessage()));
+    }
 }
