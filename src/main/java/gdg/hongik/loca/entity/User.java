@@ -29,6 +29,10 @@ public class User {
     @Column(name = "nickname")
     private String nickname;
 
+    @Column(name = "icon_id", nullable = false)
+    @Builder.Default
+    private Integer iconId = 1;
+
     @Column(name = "is_admin", nullable = false)
     @Builder.Default
     private boolean admin = false;
