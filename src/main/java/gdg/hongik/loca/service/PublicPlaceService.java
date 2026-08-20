@@ -16,6 +16,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import gdg.hongik.loca.dto.common.SliceResponse;
+import org.springframework.data.domain.Sort;
+
 import java.util.List;
 import java.time.OffsetDateTime;
 
@@ -32,6 +35,9 @@ public class PublicPlaceService {
 
     // 장소 상세에 노출할 대표 태그 개수
     private static final int PLACE_TAG_LIMIT = 5;
+
+    // public 장소 전체 조회 페이지 크기
+    private static final int PUBLIC_PLACE_PAGE_SIZE = 30;
 
     // 장소 생성
     // 활성 장소와 kakaoPlaceId가 겹칠 경우 DuplicateKakaoPlaceIdException 발생
@@ -88,11 +94,18 @@ public class PublicPlaceService {
         return PublicPlaceDetailResponse.of(place, tags, visitCount);
     }
 
-    // 활성 장소 목록 조회
-    public List<PublicPlaceResponse> getPlaces() {
-        return placeRepository.findAllByDeletedAtIsNull().stream()
-                .map(PublicPlaceResponse::from)
-                .toList();
+    // 활성 장소 목록 페이징 조회
+    public SliceResponse<PublicPlaceResponse> getPlaces(int page) {
+        PageRequest pageRequest = PageRequest.of(
+                Math.max(page, 0),
+                PUBLIC_PLACE_PAGE_SIZE,
+                Sort.by(Sort.Direction.ASC, "placeId")
+        );
+
+        return SliceResponse.from(
+                placeRepository.findAllByDeletedAtIsNull(pageRequest)
+                        .map(PublicPlaceResponse::from)
+        );
     }
 
     // 장소 수정

@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import gdg.hongik.loca.dto.common.SliceResponse;
+import org.springframework.web.bind.annotation.RequestParam;
 
 // 장소 조회 API
 @RestController
@@ -21,8 +22,10 @@ public class PublicPlaceController {
 
     // 장소 목록 조회
     @GetMapping
-    public List<PublicPlaceResponse> getPlaces() {
-        return placeService.getPlaces();
+    public SliceResponse<PublicPlaceResponse> getPlaces(
+            @RequestParam(defaultValue = "0") int page
+    ) {
+        return placeService.getPlaces(page);
     }
 
     // 장소 상세 조회 (태그, 방문 횟수 포함)
